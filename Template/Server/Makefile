@@ -17,6 +17,6 @@ compile-server-rmi: Server/TCP/*.java Server/RMI/*.java Server/Interface/IResour
 	javac Server/TCP/*.java Server/RMI/*.java Server/Interface/IResourceManager.java Server/Common/*.java Server/LockManager/*.java
 
 clean:
-	rm -f Server/Interface/*.class Server/Common/*.class Server/RMI/*.class Server/LockManager/*.java
+	rm -f Server/Interface/*.class Server/Common/*.class Server/RMI/*.class Server/LockManager/*.class
 	rm -f RMIInterface.jar
 	rm -f java.policy 
