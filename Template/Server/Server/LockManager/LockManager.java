@@ -64,7 +64,11 @@ public class LockManager
 
 						if (bConvert.get(0) == true) {
 							//TODO: Lock conversion 
-							// Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") converted");
+							this.lockTable.remove(new TransactionLockObject(xid, data, TransactionLockObject.LockType.LOCK_READ));
+							this.lockTable.remove(new DataLockObject(xid, data, TransactionLockObject.LockType.LOCK_READ));
+							this.lockTable.add(xLockObject);
+							this.lockTable.add(dataLockObject);
+						    Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") converted");
 						} else {
 							// Lock request that is not lock conversion
 							this.lockTable.add(xLockObject);
@@ -228,6 +232,12 @@ public class LockManager
 					// Seeing the comments at the top of this function might be helpful
 
 					//TODO: Lock conversion
+					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_WRITE) {
+						throw new RedundantLockRequestException(dataLockObject.getXId(), "redundant WRITE lock request");
+					}
+					if (l_dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_READ){
+						bitset.set(0);
+					}
 				}
 			} 
 			else if (dataLockObject.getLockType() == TransactionLockObject.LockType.LOCK_READ)
