@@ -423,6 +423,50 @@ public abstract class Client
 				break;
 			}
 
+
+			/**
+			 * add commands for milestone2
+			 */
+			case Start: {
+				checkArgumentsCount(1, arguments.size());
+				System.out.println("Starting a transaction:");
+				int xid = m_resourceManager.start();
+				System.out.println("xid=" + xid);
+				break;
+			}
+
+			case Commit: {
+				checkArgumentsCount(2, arguments.size());
+				int xid = toInt(arguments.elementAt(1));
+				System.out.println("Attempting to commit transaction: xid=" + xid);
+				boolean commit = m_resourceManager.commit(xid);
+				if (commit)
+					System.out.println(xid + " has committed");
+				else
+					System.out.println(xid + " has aborted");
+
+				break;
+			}
+
+			case Abort: {
+				checkArgumentsCount(2, arguments.size());
+				int xid = toInt(arguments.elementAt(1));
+				System.out.println("Attempting to abort transaction: xid=" + xid);
+				m_resourceManager.abort(xid);
+				System.out.println(xid + " has aborted");
+				break;
+			}
+
+			case Shutdown: {
+				checkArgumentsCount(1, arguments.size());
+				System.out.println("Graceful shutdown of architecture");
+				m_resourceManager.shutdown();
+				System.out.println("Quitting client");
+				System.exit(0);
+				break;
+			}
+
+
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
 

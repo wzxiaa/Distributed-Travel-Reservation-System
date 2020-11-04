@@ -29,6 +29,19 @@ public enum Command {
 
 	Bundle("Book N flight numbers, and optionally a room and/or car at a location", "<xid>,<CustomerID>,<FlightNumber1>...<FlightNumberN>,<Location>,<Car-Y/N>,<Room-Y/N>"),
 
+
+
+	/**
+	 * add commands for Milestone2
+	 */
+	
+	Start("Start a Transaction (returns transaction xid)", ""),
+	Commit("Commit a transaction", "<xid>"),
+	Abort("Aborts a transaction", "<xid>"),
+	Shutdown("Shutdown the distributed architecture", ""),
+
+	
+
 	Quit("Exit the client application", ""),
 
         Summary("Overall resource summary (who has reserved an item and at what price", "<xid>");
