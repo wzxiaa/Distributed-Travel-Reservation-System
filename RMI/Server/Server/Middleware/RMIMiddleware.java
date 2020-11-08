@@ -84,9 +84,9 @@ public class RMIMiddleware extends Middleware {
             // Bind the remote object's stub in the registry
             Registry l_registry;
             try {
-                l_registry = LocateRegistry.createRegistry(1099);
+                l_registry = LocateRegistry.createRegistry(12345);
             } catch (RemoteException e) {
-                l_registry = LocateRegistry.getRegistry(1099);
+                l_registry = LocateRegistry.getRegistry(12345);
             }
             final Registry registry = l_registry;
             registry.rebind(s_rmiPrefix + s_serverName, resourceManager);

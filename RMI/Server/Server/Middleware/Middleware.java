@@ -200,6 +200,8 @@ public class Middleware extends ResourceManager {
 
     public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
         int id = xid;
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
 
         Trace.info("addFlight - Redirect to Flight Resource Manager");
         //checkTransaction(id);
@@ -279,6 +281,8 @@ public class Middleware extends ResourceManager {
         int id = xid;
         Trace.info("queryFlight - Redirect to Flight Resource Manager");
         //checkTransaction(id);
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
 
         acquireLock(id, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Flight");
@@ -883,6 +887,8 @@ public class Middleware extends ResourceManager {
             }
         } catch (DeadlockException e) {
             Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") " + e.getLocalizedMessage());
+//            Transaction t = traxManager.getActiveTransaction(xid);
+//            t.resetTimer();
             traxManager.abort(xid);
             throw new TransactionAbortedException(xid, "The transaction has been aborted due to a deadlock");
         }

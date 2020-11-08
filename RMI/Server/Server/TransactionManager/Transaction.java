@@ -7,7 +7,7 @@ public class Transaction {
     public static final String FLIGHT_RM = "Flight";
     public static final String ROOM_RM = "Room";
     public static final String CAR_RM = "Car";
-    public static final long TIME_TO_LIVE = 20000;
+    public static final long TIME_TO_LIVE = 50000;
 
     private int xid;
     protected RMHashMap tmpData = new RMHashMap();
@@ -28,9 +28,13 @@ public class Transaction {
     
     public boolean hasExpired(){
         return (new Date()).getTime() > startTime + TIME_TO_LIVE ? true : false;
+//        return false;
     }
 
     public void resetTimer() {
+        System.out.println("Transaction: " + xid);
+        System.out.println("Original timeout: " + startTime);
+        System.out.println("Timout rest");
         this.startTime = (new Date()).getTime();
     }
 
@@ -73,6 +77,7 @@ public class Transaction {
         synchronized(tmpData) {
             tmpData.put(key, value);
         }
+//        System.out.println("tmpData: " + tmpData.toString());
     }
 
     // Remove the item out of storage
@@ -81,6 +86,7 @@ public class Transaction {
         synchronized(tmpData) {
             tmpData.remove(key);
         }
+
     }
 
     public int getXid(){

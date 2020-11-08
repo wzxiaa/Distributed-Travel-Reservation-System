@@ -40,14 +40,15 @@ public class TransactionManager implements Runnable{
                     for (int xid : activeTxns.keySet()) {
                         if (activeTxns.get(xid).hasExpired()) {
                             try {
+                                System.out.println("Aborted!!!!!!!!!!!");
                                 abort(xid);
                             } catch(Exception e){
-                                e.printStackTrace();
+                                e.printStackTrace(System.out);
                             }
                         }
                     }
                 }
-                Thread.sleep(5000);
+//                Thread.sleep(1000);
             } catch (Exception e){
                 e.printStackTrace(System.out);
             }
@@ -83,7 +84,7 @@ public class TransactionManager implements Runnable{
     public void abort(int xid) throws InvalidTransactionException{
         // TODO
         System.out.println("Abort transaction:" + xid);
-
+        System.out.println("Aborted!!!!!!!!!!!");
 		if(!isActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
 

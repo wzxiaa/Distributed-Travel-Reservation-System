@@ -51,7 +51,8 @@ public class ResourceManager implements IResourceManager
 
 		Transaction t = tm.getActiveTransaction(xid);
 
-		if (t.readCopyData(xid, key)!=null) {
+		if (t.readCopyData(xid, key)==null) {
+			System.out.println(m_data.toString());
 			synchronized (m_data) {
 				RMItem item = m_data.get(key);
 				if (item != null) {
