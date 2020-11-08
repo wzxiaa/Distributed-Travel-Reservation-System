@@ -6,7 +6,7 @@
 package Server.Common;
 
 import Server.Interface.*;
-import Server.Transactions.*;
+import Server.TransactionManager.*;
 
 import java.util.*;
 import java.rmi.RemoteException;
