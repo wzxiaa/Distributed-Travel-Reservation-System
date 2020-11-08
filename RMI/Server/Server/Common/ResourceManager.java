@@ -6,6 +6,7 @@
 package Server.Common;
 
 import Server.Interface.*;
+import Server.Middleware.Middleware;
 import Server.TransactionManager.*;
 
 import java.util.*;
@@ -30,10 +31,10 @@ public class ResourceManager implements IResourceManager
 
 	public void addTransaction(int xid) throws RemoteException {
 		Trace.info("RM::addTransaction(" + xid + ") called");
-		if (!tm.xidActive(xid)) {
+		if (!tm.isActive(xid)) {
 			Trace.info("Transaction added");
 			Transaction t = new Transaction(xid);
-			tm.writeActiveData(xid, t);
+			tm.addActiveTransaction(xid, t);
 		}
 	}
 
@@ -41,47 +42,46 @@ public class ResourceManager implements IResourceManager
 	// Reads a data item
 	protected RMItem readData(int xid, String key) throws InvalidTransactionException
 	{
-		if(!tm.xidActive(xid))
+		if(!tm.isActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
 
-		Transaction t = tm.readActiveData(xid);
+		Transaction t = tm.getActiveTransaction(xid);
 
-		if (!t.hasData(key)) {
+		if (t.readCopyData(xid, key)!=null) {
 			synchronized (m_data) {
 				RMItem item = m_data.get(key);
 				if (item != null) {
-					t.writeData(xid, key, (RMItem) item.clone());
+					t.writeCopyData(xid, key, (RMItem) item.clone());
 				}
 				else {
-					t.writeData(xid, key, null);
+					t.writeCopyData(xid, key, null);
 				}
 			}
 		}
 
-		return t.readData(xid, key);
-
+		return t.readCopyData(xid, key);
 	}
 
 	// Writes a data item
 	protected void writeData(int xid, String key, RMItem value) throws InvalidTransactionException
 	{
-		if(!tm.xidActive(xid))
+		if(!tm.isActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
 		readData(xid, key); // this ensures that the data is copied in the transaction local copy
 
-		Transaction t = tm.readActiveData(xid);
-		t.writeData(xid, key, value);
+		Transaction t = tm.getActiveTransaction(xid);
+		t.writeCopyData(xid, key, value);
 	}
 
 	// Remove the item out of storage
 	protected void removeData(int xid, String key) throws InvalidTransactionException
 	{
-		if(!tm.xidActive(xid))
+		if(!tm.isActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
 		readData(xid, key); // this ensures that the data is copied in the transaction local copy
 
-		Transaction t = tm.readActiveData(xid);
-		t.writeData(xid, key, null);
+		Transaction t = tm.getActiveTransaction(xid);
+		t.writeCopyData(xid, key, null);
 	}
 
 	// Deletes the encar item
@@ -116,43 +116,82 @@ public class ResourceManager implements IResourceManager
 	{
 		Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem)readData(xid, key);
-		int value = 0;  
+		int value = 0;
 		if (curObj != null)
 		{
 			value = curObj.getCount();
 		}
 		Trace.info("RM::queryNum(" + xid + ", " + key + ") returns count=" + value);
 		return value;
-	}    
+	}
 
 	// Query the price of an item
 	protected int queryPrice(int xid, String key) throws InvalidTransactionException
 	{
 		Trace.info("RM::queryPrice(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem)readData(xid, key);
-		int value = 0; 
+		int value = 0;
 		if (curObj != null)
 		{
 			value = curObj.getPrice();
 		}
 		Trace.info("RM::queryPrice(" + xid + ", " + key + ") returns cost=$" + value);
-		return value;        
+		return value;
 	}
 
+//	// Reserve an item
+//	public boolean reserveItem(int xid, int customerID, String key, String location) throws InvalidTransactionException
+//	{
+//		if (itemsAvailable(xid, key,1) < 0)
+//			return false;
+//		ReservableItem item = (ReservableItem)readData(xid,key);
+//		// Decrease the number of available items in the storage
+//		item.setCount(item.getCount() - 1);
+//		item.setReserved(item.getReserved() + 1);
+//		writeData(xid, item.getKey(), item);
+//
+//		Trace.info("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
+//		return true;
+//
+//	}
+
 	// Reserve an item
-	public boolean reserveItem(int xid, int customerID, String key, String location) throws InvalidTransactionException
+	protected boolean reserveItem(int xid, int customerID, String key, String location) throws InvalidTransactionException
 	{
-		if (itemsAvailable(xid, key,1) < 0)
+		Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called" );
+		// Read customer object if it exists (and read lock it)
+		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+		if (customer == null)
+		{
+			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ")  failed--customer doesn't exist");
 			return false;
-		ReservableItem item = (ReservableItem)readData(xid,key);
-		// Decrease the number of available items in the storage
-		item.setCount(item.getCount() - 1);
-		item.setReserved(item.getReserved() + 1);
-		writeData(xid, item.getKey(), item);
+		}
 
-		Trace.info("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
-		return true;
+		// Check if the item is available
+		ReservableItem item = (ReservableItem)readData(xid, key);
+		if (item == null)
+		{
+			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--item doesn't exist");
+			return false;
+		}
+		else if (item.getCount() == 0)
+		{
+			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--No more items");
+			return false;
+		}
+		else
+		{
+			customer.reserve(key, location, item.getPrice());
+			writeData(xid, customer.getKey(), customer);
 
+			// Decrease the number of available items in the storage
+			item.setCount(item.getCount() - 1);
+			item.setReserved(item.getReserved() + 1);
+			writeData(xid, item.getKey(), item);
+
+			Trace.info("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
+			return true;
+		}
 	}
 
 	public int itemsAvailable(int xid, String key, int quantity) throws InvalidTransactionException {
@@ -388,7 +427,7 @@ public class ResourceManager implements IResourceManager
 		return reserveItem(xid, customerID, Room.getKey(location), location);
 	}
 
-	// Reserve bundle 
+	// Reserve bundle
 	public boolean bundle(int xid, int customerId, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		return false;
@@ -408,27 +447,12 @@ public class ResourceManager implements IResourceManager
 		return summary;
 	}
 
-	public String Analytics(int xid, String key, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-	{
-		String summary = "";
-
-		int quantity = 	queryNum(xid, key);
-		if (quantity <= upperBound)
-			summary += key + ": RemainingQuantity=" + quantity + "\n";
-
-		return summary;
-	}
 
 	public boolean shutdown() throws RemoteException {
 		new Thread() {
 			@Override
 			public void run() {
 				System.out.print("Shutting down...");
-				try {
-					sleep(5000);
-				} catch (InterruptedException e) {
-					// I don't care
-				}
 				System.out.println("done");
 				System.exit(0);
 			}
@@ -437,45 +461,45 @@ public class ResourceManager implements IResourceManager
 		return true;
 	}
 
-	public int start() throws RemoteException {
-		return -1;
-	}
+//	public int start() throws RemoteException {
+//		return -1;
+//	}
 
-	public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-	{
-		System.out.println("Commit transaction:" + xid);
-		//flush transaction to m_data
-		if(!tm.xidActive(xid))
-			throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
-
-		Transaction t = tm.readActiveData(xid);
-		RMHashMap m = t.getData();
-
-		synchronized (m_data) {
-			Set<String> keyset = m.keySet();
-			for (String key : keyset) {
-				System.out.println("Write:(" + key + "," + m.get(key) + ")");
-				m_data.put(key, m.get(key));
-			}
-		}
-
-		// Move to inactive transactions
-		tm.writeActiveData(xid, null);
-		tm.writeInactiveData(xid, new Boolean(true));
-
-		return true;
-	}
-
-	public void abort(int xid) throws RemoteException, InvalidTransactionException {
-		System.out.println("Abort transaction:" + xid);
-
-		if(!tm.xidActive(xid))
-			throw new InvalidTransactionException(xid, "Not a valid transaction");
-
-		tm.writeActiveData(xid, null);
-		tm.writeInactiveData(xid, new Boolean(false));
-
-	}
+//	public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		System.out.println("Commit transaction:" + xid);
+//		//flush transaction to m_data
+//		if(!tm.isActive(xid))
+//			throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
+//
+//		Transaction t = tm.getActiveTransaction(xid);
+//		RMHashMap m = t.getData();
+//
+//		synchronized (m_data) {
+//			Set<String> keyset = m.keySet();
+//			for (String key : keyset) {
+//				System.out.println("Write:(" + key + "," + m.get(key) + ")");
+//				m_data.put(key, m.get(key));
+//			}
+//		}
+//
+//		// Move to inactive transactions
+//		tm.addActiveTransaction(xid, null);
+//		tm.writeInactiveData(xid, new Boolean(true));
+//
+//		return true;
+//	}
+//
+//	public void abort(int xid) throws RemoteException, InvalidTransactionException {
+//		System.out.println("Abort transaction:" + xid);
+//
+//		if(!tm.isActive(xid))
+//			throw new InvalidTransactionException(xid, "Not a valid transaction");
+//
+//		tm.addActiveTransaction(xid, null);
+//		tm.writeInactiveData(xid, new Boolean(false));
+//
+//	}
 
 	public String getName() throws RemoteException
 	{

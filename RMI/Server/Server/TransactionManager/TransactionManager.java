@@ -1,20 +1,25 @@
 package Server.TransactionManager;
+import Server.Interface.InvalidTransactionException;
+import Server.Middleware.Middleware;
 
 import java.util.*;
 public class TransactionManager implements Runnable{
     private HashMap<Integer, Transaction> activeTxns;
 //    private HashMap<Integer, Transaction> abortedTxns;
 //    private HashMap<Integer, Transaction> committedTxns;
-    public Middleware mdw;
+//    public Middleware mdw;
     private int counter;
 
-    public TransactionManager(Middleware mdw){
+    public TransactionManager(){    // Middleware mdw
         this.activeTxns = new HashMap<Integer, Transaction>();
 //        this.abortedTxns = new HashMap<Integer, Transaction>();
 //        this.committedTxns = new HashMap<Integer, Transaction>();
-        this.mdw = mdw;
+//        this.mdw = mdw;
         this.counter = 0;
     }
+
+
+
 
     public int start(){
         this.counter++;
@@ -34,7 +39,11 @@ public class TransactionManager implements Runnable{
                 synchronized (activeTxns) {
                     for (int xid : activeTxns.keySet()) {
                         if (activeTxns.get(xid).hasExpired()) {
-                            this.mdw.abort(xid);
+                            try {
+                                abort(xid);
+                            } catch(Exception e){
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -56,6 +65,7 @@ public class TransactionManager implements Runnable{
             if(isActive(xid))
                 return activeTxns.get(xid);
         }
+        return null;
     }
 
     public void addActiveTransaction(int xid, Transaction t){
@@ -68,6 +78,18 @@ public class TransactionManager implements Runnable{
         synchronized (activeTxns){
             activeTxns.remove(xid);
         }
+    }
+
+    public void abort(int xid) throws InvalidTransactionException{
+        // TODO
+        System.out.println("Abort transaction:" + xid);
+
+		if(!isActive(xid))
+			throw new InvalidTransactionException(xid, "Not a valid transaction");
+
+
+		addActiveTransaction(xid, null);
+//		writeInactiveData(xid, new Boolean(false));
     }
 
 //    public void addAbortedTransaction(int xid, Transaction t){

@@ -430,18 +430,6 @@ public abstract class Client
 
 				break;
 			}
-			case Analytics: {
-				checkArgumentsCount(3, arguments.size());
-				System.out.println("Printing a quantity summary for itmes that have been reserved [xid=" + arguments.elementAt(1) + "]");
-				System.out.println("For all items (that have at least 1 reservation) with remaining quantities <= " + arguments.elementAt(2));
-
-				int xid = toInt(arguments.elementAt(1));
-				int upperBound = toInt(arguments.elementAt(2));
-
-				String summary = m_resourceManager.Analytics(xid, "", upperBound);
-				System.out.print(summary);
-				break;
-			}
 			case Start: {
 				checkArgumentsCount(1, arguments.size());
 				System.out.println("Starting a transaction:");

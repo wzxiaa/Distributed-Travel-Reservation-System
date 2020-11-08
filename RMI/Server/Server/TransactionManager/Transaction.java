@@ -28,6 +28,7 @@ public class Transaction {
         this.startTime = (new Date()).getTime();
     }
 
+
     public void setRelatedRM(String rm) {
         switch (rm) {
             case FLIGHT_RM:
@@ -49,7 +50,7 @@ public class Transaction {
     }
 
     // Reads a data item
-    protected RMItem readData(int xid, String key)
+    public RMItem readCopyData(int xid, String key)
     {
         synchronized(tmpData) {
             RMItem item = tmpData.get(key);
@@ -61,7 +62,7 @@ public class Transaction {
     }
 
     // Writes a data item
-    protected void writeCopyData(int xid, String key, RMItem value)
+    public void writeCopyData(int xid, String key, RMItem value)
     {
         synchronized(tmpData) {
             tmpData.put(key, value);

@@ -22,33 +22,33 @@ import java.util.*;
 
 public interface IResourceManager extends Remote 
 {
-    /**
-     * Start new transaction
-     * @return new xid
-     */
-    public int start()
-            throws RemoteException;
-
-    /**
-     * Commit transaction
-     * @return Success
-     */
-    public boolean commit(int xid)
-            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
-
-    /**
-     * Abort transaction
-     * @return Success
-     */
-    public void abort(int xid)
-            throws RemoteException, InvalidTransactionException;
-
-    /**
-     * Shutdown
-     * @return Success
-     */
-    public boolean shutdown()
-            throws RemoteException;
+//    /**
+//     * Start new transaction
+//     * @return new xid
+//     */
+//    public int start()
+//            throws RemoteException;
+//
+//    /**
+//     * Commit transaction
+//     * @return Success
+//     */
+//    public boolean commit(int xid)
+//            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//
+//    /**
+//     * Abort transaction
+//     * @return Success
+//     */
+//    public void abort(int xid)
+//            throws RemoteException, InvalidTransactionException;
+//
+//    /**
+//     * Shutdown
+//     * @return Success
+//     */
+//    public boolean shutdown()
+//            throws RemoteException;
 
     /**
      * Add transaction to an resource manager's TransactionManager
@@ -261,14 +261,6 @@ public interface IResourceManager extends Remote
      */
     public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
-    /**
-     *
-     * @param xid
-     * @param upperBound
-     * @return All items with remaining quantities <= upperBound
-     * @throws RemoteException
-     */
-    public String Analytics(int xid, String key, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
      * Convenience for probing the resource manager.
