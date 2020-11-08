@@ -4,7 +4,6 @@ import Server.Transactions.*;
 import Server.LockManager.*;
 import Server.Interface.*;
 import Server.Common.*;
-import Server.Middleware.ServerConfig;
 import java.util.Vector;
 import java.rmi.RemoteException;
 import java.rmi.ConnectException;
@@ -14,8 +13,7 @@ import java.util.*;
 
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
-import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
+
 
 public class Middleware extends ResourceManager {
 
@@ -558,12 +556,7 @@ public class Middleware extends ResourceManager {
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(xid,"Flight");
-//        int price = m_flightResourceManager.itemsAvailable(xid, key, 1);
-//
-//        if (price < 0) {
-//            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--item unavailable");
-//            return false;
-//        }
+
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
         long ta = curr();
         long[] a = m_flightResourceManager.reserveFlight(xid, customerID, flightNumber);
@@ -597,12 +590,6 @@ public class Middleware extends ResourceManager {
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Car");
-//        int price = m_carResourceManager.itemsAvailable(xid, key, 1);
-//
-//        if (price < 0) {
-//            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
-//            return false;
-//        }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
 

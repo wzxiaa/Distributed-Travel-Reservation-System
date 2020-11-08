@@ -1,11 +1,11 @@
 package Server.Middleware;
 
 public class ServerConfig {
-    public String host;
     public int port;
+    public String host;
     public String name;
 
-    public ServerConfig(String name,String host,String port){
+    public ServerConfig(String name,String port, String host){
         this.name = name;
         this.host = host;
         this.port = Integer.parseInt(port);

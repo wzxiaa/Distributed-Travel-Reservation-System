@@ -1,6 +1,7 @@
 package Server.Middleware;
 
 public class ServerConfig {
+
     public String host;
     public int port;
     public String name;
@@ -12,3 +13,4 @@ public class ServerConfig {
     }
 
 }
+

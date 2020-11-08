@@ -3,7 +3,7 @@
 // CSE 593
 // -------------------------------
 
-package Server.RMI;
+package Server.Middleware;
 
 import Server.Interface.*;
 import Server.Common.*;
@@ -53,9 +53,6 @@ public class RMIResourceManager extends ResourceManager
 						System.out.println("'" + s_serverName + "' resource manager unbound");
 					}
 					catch(Exception e) {
-						//System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
-						//e.printStackTrace();
-
 					}
 					System.out.println("'" + s_serverName + "' Shut down");
 				}

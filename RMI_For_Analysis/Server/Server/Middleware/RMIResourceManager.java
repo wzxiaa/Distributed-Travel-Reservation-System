@@ -3,7 +3,7 @@
 // CSE 593
 // -------------------------------
 
-package Server.RMI;
+package Server.Middleware;
 
 import Server.Interface.*;
 import Server.Common.*;
