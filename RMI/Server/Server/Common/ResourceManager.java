@@ -12,6 +12,7 @@ import Server.TransactionManager.*;
 import java.util.*;
 import java.rmi.RemoteException;
 import java.io.*;
+import Server.Common.RMHashMap;
 
 public class ResourceManager implements IResourceManager
 {
@@ -19,6 +20,9 @@ public class ResourceManager implements IResourceManager
 	protected RMHashMap m_data = new RMHashMap();
 	protected TransactionManager tm;
 
+	public RMHashMap getM_data() throws RemoteException{
+		return m_data;
+	}
 	public ResourceManager(String p_name)
 	{
 		m_name = p_name;
@@ -447,6 +451,20 @@ public class ResourceManager implements IResourceManager
 		return summary;
 	}
 
+
+	public int start() throws RemoteException{
+		return 0;
+	}
+
+	public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
+		return false;
+	}
+	
+
+	public void abort(int xid) throws RemoteException, InvalidTransactionException {
+		// TODO Auto-generated method stub
+		
+	}
 
 	public boolean shutdown() throws RemoteException {
 		new Thread() {

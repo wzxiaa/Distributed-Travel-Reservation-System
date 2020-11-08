@@ -38,7 +38,7 @@ public class Middleware extends ResourceManager {
         super(p_name);
 
         lockManager = new LockManager();
-        traxManager = new TransactionManager(this);
+        traxManager = new TransactionManager();
         this.setTransactionManager(traxManager);
     }
 
@@ -64,13 +64,56 @@ public class Middleware extends ResourceManager {
 
      //   Trace.info("Resource=" + resources);
         if (relatedRM[0]){
-            flightRM.commit(xid);
+          
+            if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
+
+            Transaction transaction = traxManager.getActiveTransaction(xid);
+            RMHashMap m = transaction.get_TMPdata();
+
+            synchronized (flightRM.getM_data()) {
+                Set<String> keyset = m.keySet();
+                for (String key : keyset) {
+                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
+                    flightRM.getM_data().put(key, m.get(key));
+                }
+            }
+            traxManager.removeActiveTransaction(xid);
+        
         }
         if (relatedRM[1]){
-            carRM.commit(xid);
+            
+            if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
+
+            Transaction transaction = traxManager.getActiveTransaction(xid);
+            RMHashMap m = transaction.get_TMPdata();
+
+            synchronized (flightRM.getM_data()) {
+                Set<String> keyset = m.keySet();
+                for (String key : keyset) {
+                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
+                    flightRM.getM_data().put(key, m.get(key));
+                }
+            }
+            traxManager.removeActiveTransaction(xid);
         }
         if (relatedRM[2]){
-             roomRM.commit(xid);
+             
+            if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
+
+            Transaction transaction = traxManager.getActiveTransaction(xid);
+            RMHashMap m = transaction.get_TMPdata();
+
+            synchronized (flightRM.getM_data()) {
+                Set<String> keyset = m.keySet();
+                for (String key : keyset) {
+                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
+                    flightRM.getM_data().put(key, m.get(key));
+                }
+            }
+            traxManager.removeActiveTransaction(xid);
         }
 
         //if it is customer, we need all resources managers to work
@@ -88,38 +131,38 @@ public class Middleware extends ResourceManager {
         return true;
     }
 
-    public boolean abort(int xid) throws RemoteException, InvalidTransactionException {
-        System.out.println("Abort transaction:" + xid);
-        try {
-            //checkTransaction(xid);
-        } catch(TransactionAbortedException e) {
-            throw new InvalidTransactionException(xid, "transaction has been aborted already");
-        }
+    // public boolean abort(int xid) throws RemoteException, InvalidTransactionException {
+    //     System.out.println("Abort transaction:" + xid);
+    //     try {
+    //         //checkTransaction(xid);
+    //     } catch(TransactionAbortedException e) {
+    //         throw new InvalidTransactionException(xid, "transaction has been aborted already");
+    //     }
 
-        Transaction t = traxManager.getActiveTransaction(xid);
+    //     Transaction t = traxManager.getActiveTransaction(xid);
 
-        if(t == null){
-            //TODO: print error
-            return false;
-        }
+    //     if(t == null){
+    //         //TODO: print error
+    //         return false;
+    //     }
 
-         boolean[] relatedRM = t.getRelatedRMs();
+    //      boolean[] relatedRM = t.getRelatedRMs();
 
-     //   Trace.info("Resource=" + resources);
-        if (relatedRM[0]){
-            flightRM.abort(xid);
-        }
-        if (relatedRM[1]){
-            carRM.abort(xid);
-        }
-        if (relatedRM[2]){
-             roomRM.abort(xid);
-        }
-        endTransaction(xid, false);
-        return true;
-    }
+    //  //   Trace.info("Resource=" + resources);
+    //     if (relatedRM[0]){
+    //         flightRM.abort(xid);
+    //     }
+    //     if (relatedRM[1]){
+    //         carRM.abort(xid);
+    //     }
+    //     if (relatedRM[2]){
+    //          roomRM.abort(xid);
+    //     }
+    //     endTransaction(xid, false);
+    //     return true;
+    // }
 
-    private void endTransaction(int xid, boolean commit) {
+    private void endTransaction(int xid, boolean commit) throws RemoteException {
         // Move to inactive transactions
         // TODO: remove commit parameter
         traxManager.removeActiveTransaction(xid);
@@ -543,14 +586,14 @@ public class Middleware extends ResourceManager {
             Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--customer doesn't exist");
             return false;
         }
-        HashMap<String, Integer> countMap = countFlights(flightNumbers);
+        HashMap<String, Integer> countraxManagerap = countFlights(flightNumbers);
         HashMap<Integer, Integer> flightPrice = new HashMap<Integer, Integer>();
         int carPrice;
         int roomPrice;
 
         if (car && room) {
             // Check flight availability
-            for (String key : countMap.keySet()) {
+            for (String key : countraxManagerap.keySet()) {
                 int keyInt;
 
                 try {
@@ -561,7 +604,7 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -609,7 +652,7 @@ public class Middleware extends ResourceManager {
 
         } else if (car) {
             // Check flight availability
-            for (String key : countMap.keySet()) {
+            for (String key : countraxManagerap.keySet()) {
                 int keyInt;
 
                 try {
@@ -620,7 +663,7 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -648,7 +691,7 @@ public class Middleware extends ResourceManager {
 
         } else if (room) {
             // Check flight availability
-            for (String key : countMap.keySet()) {
+            for (String key : countraxManagerap.keySet()) {
                 int keyInt;
 
                 try {
@@ -659,7 +702,7 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -687,7 +730,7 @@ public class Middleware extends ResourceManager {
         }
         else{
             // Check flight availability
-            for (String key : countMap.keySet()) {
+            for (String key : countraxManagerap.keySet()) {
                 int keyInt;
 
                 try {
@@ -698,7 +741,7 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -715,7 +758,7 @@ public class Middleware extends ResourceManager {
         }
         // Reserve flights
         for (Integer key : flightPrice.keySet()) {
-            for (int i = 0; i < countMap.get(String.valueOf(key)); i++) {
+            for (int i = 0; i < countraxManagerap.get(String.valueOf(key)); i++) {
                 int price = flightPrice.get(key);
 
                 acquireLock(xid, Flight.getKey(key), TransactionLockObject.LockType.LOCK_WRITE);
@@ -731,70 +774,14 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public String Analytics(int xid, String k, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("RM::Analytics(" + xid + ", upperBound=" + upperBound + ") called" );
-
-     //   ////checkTransaction(xid);
-        // TODO: change this
-        // Transaction t = traxManager.getActiveTransaction(xid);
-        // RMHashMap m = t.getData();
-        // Set<String> keyset = new HashSet<String>(m.keySet());
-        // keyset.addAll(m_data.keySet());
-
-        String summary = "";
-
-        Set<String> printed = new HashSet<String>();
-
-        for (String key: keyset) {
-            acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,"Customer");
-            Customer customer = (Customer)readData(xid, key);
-
-            if (customer == null)
-                continue;
-
-            Set<String> reservations = customer.getReservations().keySet();
-
-            for (String reservation: reservations) {
-
-                if (printed.contains(reservation))
-                    continue;
-                printed.add(reservation);
-
-                String type = reservation.split("-")[0];
-
-                switch (type) {
-                    case "flight": {
-                        addResourceManagerUsed(id,"Flight");
-                        summary += flightRM.Analytics(xid, reservation, upperBound);
-                        break;
-                    }
-                    case "car": {
-                        addResourceManagerUsed(id,"Car");
-                        summary += carRM.Analytics(xid, reservation, upperBound);
-                        break;
-                    }
-                    case "room": {
-                        addResourceManagerUsed(id,"Room");
-                        summary += roomRM.Analytics(xid, reservation, upperBound);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return summary;
-    }
 
     public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
         int id = xid;
 
       //  //checkTransaction(xid);
-        Transaction t = traxManager.readActiveData(xid);
-        RMHashMap m = t.getData();
+        Transaction t = traxManager.getActiveTransaction(xid);
+        RMHashMap m = t.get_TMPdata();
         Set<String> keyset = new HashSet<String>(m.keySet());
         keyset.addAll(m_data.keySet());
 
@@ -896,12 +883,12 @@ public class Middleware extends ResourceManager {
             }
         } catch (DeadlockException e) {
             Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") " + e.getLocalizedMessage());
-            abort(xid);
+            traxManager.abort(xid);
             throw new TransactionAbortedException(xid, "The transaction has been aborted due to a deadlock");
         }
     }
 
-    public void addResourceManagerUsed(int xid, String resource) {
+    public void addResourceManagerUsed(int xid, String resource) throws RemoteException  {
         Transaction t = traxManager.getActiveTransaction(xid);
         t.setRelatedRM(resource);
 

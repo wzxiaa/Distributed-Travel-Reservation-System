@@ -87,8 +87,8 @@ public class TransactionManager implements Runnable{
 		if(!isActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
 
-
-		addActiveTransaction(xid, null);
+        removeActiveTransaction(xid);
+		//removeActiveTrcccansaction(xid, null);
 //		writeInactiveData(xid, new Boolean(false));
     }
 

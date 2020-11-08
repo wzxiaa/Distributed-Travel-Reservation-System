@@ -4,6 +4,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.*;
 
+import Server.Common.RMHashMap;
+
 /** 
  * Simplified version from CSE 593 Univ. of Washington
  *
@@ -43,18 +45,23 @@ public interface IResourceManager extends Remote
 //    public void abort(int xid)
 //            throws RemoteException, InvalidTransactionException;
 //
-//    /**
-//     * Shutdown
-//     * @return Success
-//     */
-//    public boolean shutdown()
-//            throws RemoteException;
+   /**
+    * Shutdown
+    * @return Success
+    */
+   public boolean shutdown()
+           throws RemoteException;
 
     /**
      * Add transaction to an resource manager's TransactionManager
      */
     public void addTransaction(int xid) throws RemoteException;
+    public int start() throws RemoteException;
 
+    public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException;
+
+    public void abort(int xid) throws RemoteException, InvalidTransactionException;
+    public RMHashMap getM_data() throws RemoteException;
     /**
      * Add seats to a flight.
      *
