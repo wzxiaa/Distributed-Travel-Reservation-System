@@ -71,11 +71,11 @@ public class Middleware extends ResourceManager {
             Transaction transaction = traxManager.getActiveTransaction(xid);
             RMHashMap m = transaction.get_TMPdata();
 
-            synchronized (flightRM.getM_data()) {
+            synchronized (flightRM.m_data ){
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    flightRM.getM_data().put(key, m.get(key));
+                    flightRM.m_data.put(key, m.get(key));
                 }
             }
             traxManager.removeActiveTransaction(xid);
@@ -89,11 +89,11 @@ public class Middleware extends ResourceManager {
             Transaction transaction = traxManager.getActiveTransaction(xid);
             RMHashMap m = transaction.get_TMPdata();
 
-            synchronized (flightRM.getM_data()) {
+            synchronized (flightRM.m_data) {
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    flightRM.getM_data().put(key, m.get(key));
+                    flightRM.m_data.put(key, m.get(key));
                 }
             }
             traxManager.removeActiveTransaction(xid);
@@ -106,11 +106,11 @@ public class Middleware extends ResourceManager {
             Transaction transaction = traxManager.getActiveTransaction(xid);
             RMHashMap m = transaction.get_TMPdata();
 
-            synchronized (flightRM.getM_data()) {
+            synchronized (flightRM.m_data) {
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    flightRM.getM_data().put(key, m.get(key));
+                    flightRM.m_data.put(key, m.get(key));
                 }
             }
             traxManager.removeActiveTransaction(xid);

@@ -17,12 +17,12 @@ import Server.Common.RMHashMap;
 public class ResourceManager implements IResourceManager
 {
 	protected String m_name = "";
-	protected RMHashMap m_data = new RMHashMap();
+	public RMHashMap m_data = new RMHashMap();
 	protected TransactionManager tm;
 
-	public RMHashMap getM_data() throws RemoteException{
-		return m_data;
-	}
+	// public RMHashMap getM_data() {
+	// 	return m_data;
+	// }
 	public ResourceManager(String p_name)
 	{
 		m_name = p_name;
