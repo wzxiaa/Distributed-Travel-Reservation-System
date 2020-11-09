@@ -20,11 +20,14 @@ import Server.Common.*;
 
 
 public class Middleware extends ResourceManager {
+    public static final String FLIGHT_RM = "Flight";
+    public static final String ROOM_RM = "Room";
+    public static final String CAR_RM = "Car";
+    public static final String CUSTOMER_RM = "Customer";
 
     protected static ServerConfig s_flightServer;
     protected static ServerConfig s_carServer;
     protected static ServerConfig s_roomServer;
-
     
     protected IResourceManager flightRM = null;
     protected IResourceManager carRM = null;
@@ -44,51 +47,28 @@ public class Middleware extends ResourceManager {
 
     public int start() throws RemoteException{
         int xid  = traxManager.start();
-        Trace.info("Start transaction .... " + xid);
+        Trace.info("Start transaction " + xid);
         return xid;
     }
 
     public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        //int id = xid;
-      //  System.out.print("Commit transaction:" + xid);
-
-        //checkTransaction(xid);
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, "Middleware commit: transaction is not active");
         Transaction t = traxManager.getActiveTransaction(xid);
-
-        if(t == null){
-            //TODO: print error
-            return false;
-        }
+        RMHashMap m = t.get_TMPdata();
         boolean[] relatedRM = t.getRelatedRMs();
 
-     //   Trace.info("Resource=" + resources);
         if (relatedRM[0]){
-          
-            if(!traxManager.isActive(xid))
-            throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
-
-            Transaction transaction = traxManager.getActiveTransaction(xid);
-            RMHashMap m = transaction.get_TMPdata();
-
-            synchronized (flightRM.m_data ){
+            synchronized (flightRM.m_data){
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     flightRM.m_data.put(key, m.get(key));
                 }
             }
-            traxManager.removeActiveTransaction(xid);
-        
         }
         if (relatedRM[1]){
-            
-            if(!traxManager.isActive(xid))
-            throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
-
-            Transaction transaction = traxManager.getActiveTransaction(xid);
-            RMHashMap m = transaction.get_TMPdata();
-
             synchronized (flightRM.m_data) {
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
@@ -96,16 +76,8 @@ public class Middleware extends ResourceManager {
                     flightRM.m_data.put(key, m.get(key));
                 }
             }
-            traxManager.removeActiveTransaction(xid);
         }
         if (relatedRM[2]){
-             
-            if(!traxManager.isActive(xid))
-            throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
-
-            Transaction transaction = traxManager.getActiveTransaction(xid);
-            RMHashMap m = transaction.get_TMPdata();
-
             synchronized (flightRM.m_data) {
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
@@ -113,467 +85,289 @@ public class Middleware extends ResourceManager {
                     flightRM.m_data.put(key, m.get(key));
                 }
             }
-            traxManager.removeActiveTransaction(xid);
         }
 
         //if it is customer, we need all resources managers to work
         if (relatedRM[0] && relatedRM[1] && relatedRM[2]) {
-            // RMHashMap m = t.getData();
-            // synchronized (m_data) {
-            //     Set<String> keyset = m.keySet();
-            //     for (String key : keyset) {
-            //         System.out.print("Write:(" + key + "," + m.get(key) + ")");
-            //         m_data.put(key, m.get(key));
-            //     }
-            // }
+            synchronized (m_data) {
+                Set<String> keyset = m.keySet();
+                for (String key : keyset) {
+                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
+                    m_data.put(key, m.get(key));
+                }
+            }
         }
-        endTransaction(xid, true);
+
+        traxManager.removeActiveTransaction(xid);
+        lockManager.UnlockAll(xid);
         return true;
     }
 
-    // public boolean abort(int xid) throws RemoteException, InvalidTransactionException {
-    //     System.out.println("Abort transaction:" + xid);
-    //     try {
-    //         //checkTransaction(xid);
-    //     } catch(TransactionAbortedException e) {
-    //         throw new InvalidTransactionException(xid, "transaction has been aborted already");
-    //     }
-
-    //     Transaction t = traxManager.getActiveTransaction(xid);
-
-    //     if(t == null){
-    //         //TODO: print error
-    //         return false;
-    //     }
-
-    //      boolean[] relatedRM = t.getRelatedRMs();
-
-    //  //   Trace.info("Resource=" + resources);
-    //     if (relatedRM[0]){
-    //         flightRM.abort(xid);
-    //     }
-    //     if (relatedRM[1]){
-    //         carRM.abort(xid);
-    //     }
-    //     if (relatedRM[2]){
-    //          roomRM.abort(xid);
-    //     }
-    //     endTransaction(xid, false);
-    //     return true;
-    // }
-
-    private void endTransaction(int xid, boolean commit) throws RemoteException {
-        // Move to inactive transactions
-        // TODO: remove commit parameter
-        traxManager.removeActiveTransaction(xid);
-        // traxManager.writeActiveData(xid, null);
-        // traxManager.writeInactiveData(xid, new Boolean(commit));
-
-        lockManager.UnlockAll(xid);
-    }
-
-    // private void updateTimeToLive(int xid) {
-    //     traxManager.readActiveData(xid).updateLastAction();
-    // }
-
     public boolean shutdown() throws RemoteException {
-       
         carRM.shutdown();
         roomRM.shutdown();
         flightRM.shutdown();
-
         new Thread() {
             @Override
             public void run() {
-                System.out.print("Shutting down...");
+                System.out.print("Middleware: shutting down...");
                 try {
                     sleep(5000);
                 } catch (InterruptedException e) {
                 }
-                System.out.println("done");
+                System.out.println("finished");
                 System.exit(0);
             }
-
         }.start();
         return true;
     }
 
     public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
-        int id = xid;
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
-
-        Trace.info("addFlight - Redirect to Flight Resource Manager");
-        //checkTransaction(id);
-        acquireLock(id, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(id,"Flight");
-
-        return flightRM.addFlight(id, flightNum, flightSeats, flightPrice);
+        Trace.info("Middleware: addFlight");
+        lockData(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(xid,FLIGHT_RM);
+        return flightRM.addFlight(xid, flightNum, flightSeats, flightPrice);
     }
 
-    public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("addCars - Redirect to Car Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(id,"Car");
-
-
-        return carRM.addCars(id, location, numCars, price);
-
-    }
-
-    public boolean addRooms(int xid, String location, int numRooms, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("addRooms - Redirect to Room Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(id,"Room");
-
-        return roomRM.addRooms(id, location, numRooms, price);
-
-    }
-
-    public boolean deleteFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("deleteFlight - Redirect to Flight Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(id,"Flight");
-
-        return flightRM.deleteFlight(id, flightNum);
-
-    }
-
-    public boolean deleteCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("deleteCars - Redirect to Car Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(id,"Car");
-
-        return carRM.deleteCars(id, location);
-    }
-
-    public boolean deleteRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("deleteRooms - Redirect to Room Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(id,"Room");
-
-        return roomRM.deleteRooms(id, location);
-    }
-
-
-    public int queryFlight(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("queryFlight - Redirect to Flight Resource Manager");
-        //checkTransaction(id);
+    public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
+        Trace.info("Middleware: addCars");
+        lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(xid, CAR_RM);
+        return carRM.addCars(xid, location, numCars, price);
+    }
 
-        acquireLock(id, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Flight");
-        return flightRM.queryFlight(id, flightNumber);
+    public boolean addRooms(int xid, String location, int numRooms, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        Trace.info("Middleware: addRooms");
+        lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(xid,ROOM_RM);
+        return roomRM.addRooms(xid, location, numRooms, price);
+    }
+
+    public boolean deleteFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        Trace.info("Middleware: deleteFlight");
+        lockData(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(xid,FLIGHT_RM);
+        return flightRM.deleteFlight(xid, flightNum);
+    }
+
+    public boolean deleteCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        Trace.info("Middleware: deleteCars");
+        lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(xid,CAR_RM);
+        return carRM.deleteCars(xid, location);
+    }
+
+    public boolean deleteRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        Trace.info("Middleware: deleteRooms");
+        lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(xid,ROOM_RM);
+        return roomRM.deleteRooms(xid, location);
+    }
+    
+    public int queryFlight(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middlware: queryFlight");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,FLIGHT_RM);
+        return flightRM.queryFlight(xid, flightNumber);
     }
 
 
-    public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("queryCars - Redirect to Car Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Car");
-
-        return carRM.queryCars(id, location);
+    public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryCars");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CAR_RM);
+        return carRM.queryCars(xid, location);
     }
 
-
-
-    public String queryCustomerInfo(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        //checkTransaction(xid);
-        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,"Customer");
+    public String queryCustomerInfo(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: querCustomer");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CUSTOMER_RM);
         return super.queryCustomerInfo(xid,customerID);
     }
 
-
-    public int queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("queryRooms - Redirect to Room Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Room");
-
-        return roomRM.queryRooms(id, location);
+    public int queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryRooms");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,ROOM_RM);
+        return roomRM.queryRooms(xid, location);
     }
 
-
-    public int queryFlightPrice(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("queryFlightPrice - Redirect to Flight Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Flight");
-
-        return flightRM.queryFlightPrice(id, flightNumber);
+    public int queryFlightPrice(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryFlightPrice");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,FLIGHT_RM);
+        return flightRM.queryFlightPrice(xid, flightNumber);
     }
 
+    public int queryCarsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryCarsPrice");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CAR_RM);
+        return carRM.queryCarsPrice(xid, location);
+    }
 
-    public int queryCarsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("queryCarsPrice - Redirect to Car Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Car");
-
-        return carRM.queryCarsPrice(id, location);
+    public int queryRoomsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryRoomsPrice");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,ROOM_RM);
+        return roomRM.queryRoomsPrice(xid, location);
     }
 
     public int newCustomer(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        int id = xid;
-        //checkTransaction(xid);
-
-        Trace.info("RM::newCustomer(" + xid + ") called");
+        Trace.info("Middleware: newCustomer(" + xid + ")");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
         int cid = Integer.parseInt(String.valueOf(xid) +
                 String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
                 String.valueOf(Math.round(Math.random() * 100 + 1)));
         Customer customer = new Customer(cid);
-        acquireLock(xid, customer.getKey(), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(id,"Customer");
+        lockData(xid, customer.getKey(), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(xid,CUSTOMER_RM);
+
         writeData(xid, customer.getKey(), customer);
-        Trace.info("RM::newCustomer(" + cid + ") returns ID=" + cid);
+        flightRM.newCustomer(xid, cid);
+        flightRM.newCustomer(xid, cid);
+        flightRM.newCustomer(xid, cid);
+
+        Trace.info("Middleware: newCustomer(" + xid + ") returns ID=" + cid);
         return cid;
     }
 
     public boolean newCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") called");
+        Trace.info("Middleware: newCustomer(" + xid + ", " + customerID + ")");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CUSTOMER_RM);
 
-        int id = xid;
-        //checkTransaction(xid);
-        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Customer");
-
-        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
-        if (customer == null)
-        {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+        Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
+        if (customer != null){
+            Trace.info("Middleware: customer(" + xid + ", " + customerID + ") already exists");
+            return false;
+        } else {
+            lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
             customer = new Customer(customerID);
             writeData(xid, customer.getKey(), customer);
-            Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") created a new customer");
+            flightRM.newCustomer(xid, customerID);
+            flightRM.newCustomer(xid, customerID);
+            flightRM.newCustomer(xid, customerID);
+            Trace.info("Middleware:newCustomer(" + xid + ", " + customerID + ") created");
             return true;
         }
-        else
-        {
-            Trace.info("INFO: RM::newCustomer(" + xid + ", " + customerID + ") failed--customer already exists");
-            return false;
-        }
     }
-
-
 
     public boolean deleteCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        int id = xid;
-        Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") called");
-        //checkTransaction(xid);
-
-        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Customer");
+        Trace.info("Middleware: deleteCustomer(" + xid + ", " + customerID + ")");
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
+        lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CUSTOMER_RM);
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
-        if (customer == null)
-        {
-            Trace.warn("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--customer doesn't exist");
-            return false;
-        }
-        else {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            // Increase the reserved numbers of all reservable items which the customer reserved.
-            RMHashMap reservations = customer.getReservations();
-            for (String reservedKey : reservations.keySet()) {
+        if (customer != null) {
+            // First, remove all the reservations related to the customer. Then, remove the customer from DB.
+            lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            for (String reservedKey : customer.getReservations().keySet()) {
+                lockData(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
                 String type = reservedKey.split("-")[0];
                 ReservedItem reserveditem = customer.getReservedItem(reservedKey);
-                if (type.equals("flight")) {
-                    acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
-                    addResourceManagerUsed(id,"Flight");
-                    flightRM.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
-                } else if (type.equals("car")) {
-                    acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
-                    addResourceManagerUsed(id,"Car");
-                    carRM.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
-                } else if (type.equals("room")) {
-                    acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
-                    addResourceManagerUsed(id,"Room");
-                    roomRM.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
-                } else
-                    Trace.error("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--reservedKey (" + reservedKey + ") wasn't of expected type.");
-
+                String key = reserveditem.getKey();
+                int count = reserveditem.getCount();
+                if (type.equals(FLIGHT_RM)) {
+                    addResourceManagerUsed(xid,FLIGHT_RM);
+                    flightRM.removeReservation(xid, customerID, key, count);
+                } else if (type.equals(CAR_RM)) {
+                    addResourceManagerUsed(xid,CAR_RM);
+                    carRM.removeReservation(xid, customerID, key, count);
+                } else if (type.equals(ROOM_RM)) {
+                    addResourceManagerUsed(xid,ROOM_RM);
+                    roomRM.removeReservation(xid, customerID, key, count);
+                } else {
+                    Trace.warn("Middleware: deleteCustomer type not recognized");
+                }
             }
-            // Remove the customer from the storage
             removeData(xid, customer.getKey());
-            Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") succeeded");
+            Trace.info("Middleware: customer(" + xid + ", " + customerID + ") deleted");
             return true;
+        } else {
+            Trace.warn("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
+            return false;
         }
-
     }
-//--
-
-
-
 
     public boolean reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        int id = xid;
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
         String key = Flight.getKey(flightNumber);
+        Trace.info("Middleware: reserveFlight(" + xid + ", customer=" + customerID + ", " + key + ")" );
 
-        Trace.info("RM::reserveFlight(" + xid + ", customer=" + customerID + ", " + key + ") called" );
-        //checkTransaction(xid);
-        // Check customer exists
+        lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CUSTOMER_RM);
+        lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,FLIGHT_RM);
 
-        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,"Customer");
-        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
-        if (customer == null)
-        {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--customer doesn't exist");
-            return false;
-        }
-
-        acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,"Flight");
-        int price = flightRM.itemsAvailable(xid, key, 1);
-
-        if (price < 0) {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--item unavailable");
-            return false;
-        }
-        acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (flightRM.reserveFlight(xid, customerID, flightNumber)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, String.valueOf(flightNumber), price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
-        }
-        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--Could not reserve item");
-        return false;
-
+        return flightRM.reserveFlight(xid, customerID, flightNumber);
     }
 
 
     public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        int id = xid;
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
         String key = Car.getKey(location);
+        Trace.info("Middleware: reserveCar(" + xid + ", customer=" + customerID + ", " + key + ")" );
 
-        Trace.info("RM::reserveCar(" + xid + ", customer=" + customerID + ", " + key + ") called" );
-        //checkTransaction(xid);
-        // Check customer exists
+        lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CUSTOMER_RM);
+        lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CAR_RM);
 
-        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Customer");
-        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
-        if (customer == null)
-        {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--customer doesn't exist");
-            return false;
-        }
-
-        acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Car");
-        int price = carRM.itemsAvailable(xid, key, 1);
-
-        if (price < 0) {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
-            return false;
-        }
-
-        acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (carRM.reserveCar(xid, customerID, location)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, location, price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
-        }
-        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
-        return false;
-
+        return carRM.reserveCar(xid, customerID, location);
     }
 
-
-    public int queryRoomsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
-    {
-        int id = xid;
-        Trace.info("queryRoomsPrice - Redirect to Room Resource Manager");
-        //checkTransaction(id);
-
-        acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Room");
-
-        return roomRM.queryRoomsPrice(id, location);
-    }
-
-   
-
-    
     public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        int id = xid;
+        Transaction trx = traxManager.getActiveTransaction(xid);
+        trx.resetTimer();
         String key = Room.getKey(location);
+        Trace.info("Middleware: reserveRoom(" + xid + ", customer=" + customerID + ", " + key + ")" );
 
-        Trace.info("RM::reserveRoom(" + xid + ", customer=" + customerID + ", " + key + ") called" );
-        //checkTransaction(xid);
-        // Check customer exists
+        lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,CUSTOMER_RM);
+        lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,ROOM_RM);
 
-        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Customer");
-        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
-        if (customer == null)
-        {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--customer doesn't exist");
-            return false;
-        }
-
-        acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Room");
-        int price = roomRM.itemsAvailable(xid, key, 1);
-
-        if (price < 0) {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
-            return false;
-        }
-
-        acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (roomRM.reserveRoom(xid, customerID, location)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, location, price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
-        }
-        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
-        return false;
+        return carRM.reserveRoom(xid, customerID, location);
     }
 
     public boolean bundle(int xid, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException,TransactionAbortedException, InvalidTransactionException
@@ -582,8 +376,8 @@ public class Middleware extends ResourceManager {
         Trace.info("RM::bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ") called" );
         //checkTransaction(xid);
 
-        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,"Customer");
+        lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(id,CUSTOMER_RM);
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
         {
@@ -606,8 +400,8 @@ public class Middleware extends ResourceManager {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
                     return false;
                 }
-                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,"Flight");
+                lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -617,8 +411,8 @@ public class Middleware extends ResourceManager {
                     flightPrice.put(keyInt, price);
                 }
             }
-            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,"Car");
+            lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,CAR_RM);
             carPrice = carRM.itemsAvailable(xid, Car.getKey(location), 1);
 
             if (carPrice < 0) {
@@ -626,8 +420,8 @@ public class Middleware extends ResourceManager {
                 return false;
             }
 
-            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,"Room");
+            lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,ROOM_RM);
             roomPrice = roomRM.itemsAvailable(xid, Room.getKey(location), 1);
 
             if (roomPrice < 0) {
@@ -635,16 +429,16 @@ public class Middleware extends ResourceManager {
                 return false;
             }
 
-            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             roomRM.reserveRoom(xid, customerID, location);
 
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,"Customer");
+            lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,CUSTOMER_RM);
             customer.reserve(Room.getKey(location), location, roomPrice);
 
             writeData(xid, customer.getKey(), customer);
 
-            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             carRM.reserveCar(xid, customerID, location);
 
             // Already have customer LOCK_WRITE
@@ -665,8 +459,8 @@ public class Middleware extends ResourceManager {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
                     return false;
                 }
-                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,"Flight");
+                lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -676,19 +470,19 @@ public class Middleware extends ResourceManager {
                     flightPrice.put(keyInt, price);
                 }
             }
-            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,"Car");
+            lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,CAR_RM);
             carPrice = carRM.itemsAvailable(xid, Car.getKey(location), 1);
 
             if (carPrice < 0) {
                 Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
                 return false;
             }
-            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             carRM.reserveCar(xid, customerID, location);
 
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,"Customer");
+            lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,CUSTOMER_RM);
             customer.reserve(Car.getKey(location), location, carPrice);
             writeData(xid, customer.getKey(), customer);
 
@@ -704,8 +498,8 @@ public class Middleware extends ResourceManager {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
                     return false;
                 }
-                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,"Flight");
+                lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -715,19 +509,19 @@ public class Middleware extends ResourceManager {
                     flightPrice.put(keyInt, price);
                 }
             }
-            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,"Room");
+            lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,ROOM_RM);
             roomPrice = roomRM.itemsAvailable(xid, Room.getKey(location), 1);
 
             if (roomPrice < 0) {
                 Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
                 return false;
             }
-            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             roomRM.reserveRoom(xid, customerID, location);
 
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,"Customer");
+            lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,CUSTOMER_RM);
             customer.reserve(Room.getKey(location), location, roomPrice);
             writeData(xid, customer.getKey(), customer);
 
@@ -743,8 +537,8 @@ public class Middleware extends ResourceManager {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
                     return false;
                 }
-                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,"Flight");
+                lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -757,15 +551,15 @@ public class Middleware extends ResourceManager {
         }
 
         if (flightPrice.keySet().size() > 0) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,"Customer");
+            lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,CUSTOMER_RM);
         }
         // Reserve flights
         for (Integer key : flightPrice.keySet()) {
             for (int i = 0; i < countraxManagerap.get(String.valueOf(key)); i++) {
                 int price = flightPrice.get(key);
 
-                acquireLock(xid, Flight.getKey(key), TransactionLockObject.LockType.LOCK_WRITE);
+                lockData(xid, Flight.getKey(key), TransactionLockObject.LockType.LOCK_WRITE);
                 flightRM.reserveFlight(xid, customerID, key);
                 customer.reserve(Flight.getKey(key), String.valueOf(key), price);
                 writeData(xid, customer.getKey(), customer);
@@ -781,10 +575,10 @@ public class Middleware extends ResourceManager {
 
     public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        int id = xid;
-
-      //  //checkTransaction(xid);
+        Trace.info("Middleware: Summary");
         Transaction t = traxManager.getActiveTransaction(xid);
+        t.resetTimer();
+
         RMHashMap m = t.get_TMPdata();
         Set<String> keyset = new HashSet<String>(m.keySet());
         keyset.addAll(m_data.keySet());
@@ -793,14 +587,13 @@ public class Middleware extends ResourceManager {
 
         for (String key: keyset) {
             String type = key.split("-")[0];
-            if (!type.equals("customer"))
+            if (!type.equals(CUSTOMER_RM))
                 continue;
-            acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,"Customer");
+            lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(xid,CUSTOMER_RM);
             Customer customer = (Customer)readData(xid, key);
             if (customer != null)
                 summary += customer.getSummary();
-
         }
         return summary;
     }
@@ -830,15 +623,15 @@ public class Middleware extends ResourceManager {
                     Registry registry = LocateRegistry.getRegistry(server, port);
 
                     switch(type) {
-                        case "Flight": {
+                        case FLIGHT_RM: {
                             flightRM = (IResourceManager)registry.lookup(name);
                             break;
                         }
-                        case "Car": {
+                        case CAR_RM: {
                             carRM = (IResourceManager)registry.lookup(name);
                             break;
                         }
-                        case "Room": {
+                        case ROOM_RM: {
                             roomRM = (IResourceManager)registry.lookup(name);
                             break;
                         }
@@ -878,19 +671,16 @@ public class Middleware extends ResourceManager {
     //         throw new TransactionAbortedException(xid, "MW: The transaction has been aborted");
     // }
 
-    public void acquireLock(int xid, String data, TransactionLockObject.LockType lockType) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
+    public void lockData(int xid, String data, TransactionLockObject.LockType lockType) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
         try {
-            boolean lock = lockManager.Lock(xid, data, lockType);
-            if (!lock) {
-                Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") Unable to lock");
-                throw new InvalidTransactionException(xid, "LockManager-Unable to lock");
+            if (!lockManager.Lock(xid, data, lockType)) {
+                Trace.info("Middleware: cannot lock data: lock(" + xid + ", " + data + ", " + lockType + ")");
+                throw new InvalidTransactionException(xid, "LockManager cannot lock data");
             }
         } catch (DeadlockException e) {
-            Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") " + e.getLocalizedMessage());
-//            Transaction t = traxManager.getActiveTransaction(xid);
-//            t.resetTimer();
+            Trace.info("Middleware: deadlock detected: lock(" + xid + ", " + data + ", " + lockType + ") " + e.getLocalizedMessage());
             traxManager.abort(xid);
-            throw new TransactionAbortedException(xid, "The transaction has been aborted due to a deadlock");
+            throw new TransactionAbortedException(xid, "Deadlock detected: abort transaction");
         }
     }
 
@@ -902,42 +692,45 @@ public class Middleware extends ResourceManager {
             try {
 
                 switch (resource) {
-                    case "Flight": {
+                    case FLIGHT_RM: {
                         flightRM.addTransaction(xid);
                         break;
                     }
-                    case "Car": {
+                    case CAR_RM: {
                         carRM.addTransaction(xid);
                         break;
                     }
-                    case "Room": {
+                    case ROOM_RM: {
                         roomRM.addTransaction(xid);
                         break;
                     }
-                    case "Customer": {
+                    case CUSTOMER_RM: {
                         this.addTransaction(xid);
+                        flightRM.addTransaction(xid);
+                        carRM.addTransaction(xid);
+                        roomRM.addTransaction(xid);
+                        break;
                     }
                 }
 
             } catch (ConnectException e) {
-
                 switch (resource) {
-                    case "Flight": {
-                        connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
+                    case FLIGHT_RM: {
+                        connectServer(FLIGHT_RM, s_flightServer.host, s_flightServer.port, s_flightServer.name);
                         flightRM.addTransaction(xid);
                         break;
                     }
-                    case "Car": {
-                        connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
+                    case CAR_RM: {
+                        connectServer(CAR_RM, s_carServer.host, s_carServer.port, s_carServer.name);
                         carRM.addTransaction(xid);
                         break;
                     }
-                    case "Room": {
-                        connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
+                    case ROOM_RM: {
+                        connectServer(ROOM_RM, s_roomServer.host, s_roomServer.port, s_roomServer.name);
                         roomRM.addTransaction(xid);
                         break;
                     }
-                    case "Customer": {
+                    case CUSTOMER_RM: {
                         this.addTransaction(xid);
                     }
                 }
@@ -945,11 +738,5 @@ public class Middleware extends ResourceManager {
         } catch (Exception e) {
             Trace.error(e.toString());
         }
-
     }
-
-
-
-
-
 }

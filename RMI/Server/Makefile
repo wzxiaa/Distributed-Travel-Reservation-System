@@ -1,4 +1,4 @@
-all: java.policy compile-server-rmi
+all: java.policy RMIInterface.jar RMHashMap.jar RMItem.jar compile-server-rmi
 
 java.policy: FORCE
 	@echo "Creating server java policy"

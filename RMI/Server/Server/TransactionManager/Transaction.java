@@ -7,6 +7,7 @@ public class Transaction {
     public static final String FLIGHT_RM = "Flight";
     public static final String ROOM_RM = "Room";
     public static final String CAR_RM = "Car";
+    public static final String CUSTOMER_RM = "Customer";
     public static final long TIME_TO_LIVE = 50000;
 
     private int xid;
@@ -48,6 +49,11 @@ public class Transaction {
                 relatedRM[1] = true;
                 break;
             case CAR_RM:
+                relatedRM[2] = true;
+                break;
+            case CUSTOMER_RM:
+                relatedRM[0] = true;
+                relatedRM[1] = true;
                 relatedRM[2] = true;
                 break;
             default:
