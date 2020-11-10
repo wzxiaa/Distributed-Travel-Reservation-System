@@ -71,10 +71,6 @@ public class Middleware extends ResourceManager {
                 String[] carInfo = args[1].split(",");
                 String[] roomInfo = args[2].split(",");
 
-                // s_flightServer = new ServerConfig(s_rmiPrefix + flightInfo[0],flightInfo[1],flightInfo[2]);
-                // s_carServer = new ServerConfig(s_rmiPrefix + carInfo[0],carInfo[1],carInfo[2]);
-                // s_roomServer = new ServerConfig(s_rmiPrefix + roomInfo[0],roomInfo[1],roomInfo[2]);
-
                 flightRM_serverName=s_rmiPrefix + flightInfo[0];
                 flightRM_serverHost=flightInfo[1];
                 flightRM_serverPort=Integer.parseInt(flightInfo[2]);
@@ -118,7 +114,6 @@ public class Middleware extends ResourceManager {
         }
 
     }
-
 
     public void connectServers()
     {
@@ -199,7 +194,7 @@ public class Middleware extends ResourceManager {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     m_data.put(key, m.get(key));
                 }
-                traxManager.removeActiveTransaction(xid);
+
             }
         }
         if (relatedRM[0]){
@@ -229,7 +224,7 @@ public class Middleware extends ResourceManager {
                 carRM.removeTrax(xid);
             //}
         }
-
+        traxManager.removeActiveTransaction(xid);
 
         lockManager.UnlockAll(xid);
         return true;
@@ -255,6 +250,8 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         Trace.info("Middleware: addFlight");
@@ -264,6 +261,8 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         Trace.info("Middleware: addCars");
@@ -273,6 +272,8 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean addRooms(int xid, String location, int numRooms, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         Trace.info("Middleware: addRooms");
@@ -291,6 +292,8 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean deleteCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         Trace.info("Middleware: deleteCars");
@@ -300,6 +303,8 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean deleteRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         Trace.info("Middleware: deleteRooms");
@@ -310,6 +315,8 @@ public class Middleware extends ResourceManager {
     
     public int queryFlight(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
         Trace.info("Middlware: queryFlight");
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
@@ -318,6 +325,8 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: queryCars");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -327,6 +336,8 @@ public class Middleware extends ResourceManager {
     }
 
     public String queryCustomerInfo(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: querCustomer");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -336,6 +347,8 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: queryRooms");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -345,6 +358,8 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryFlightPrice(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: queryFlightPrice");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -354,6 +369,8 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryCarsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: queryCarsPrice");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -363,6 +380,8 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryRoomsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: queryRoomsPrice");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -373,6 +392,8 @@ public class Middleware extends ResourceManager {
 
     public int newCustomer(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: newCustomer(" + xid + ")");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -394,6 +415,8 @@ public class Middleware extends ResourceManager {
 
     public boolean newCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: newCustomer(" + xid + ", " + customerID + ")");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -418,6 +441,8 @@ public class Middleware extends ResourceManager {
 
     public boolean deleteCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Trace.info("Middleware: deleteCustomer(" + xid + ", " + customerID + ")");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
@@ -457,6 +482,8 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         String key = Flight.getKey(flightNumber);
@@ -473,6 +500,8 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         String key = Car.getKey(location);
@@ -488,6 +517,8 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         String key = Room.getKey(location);

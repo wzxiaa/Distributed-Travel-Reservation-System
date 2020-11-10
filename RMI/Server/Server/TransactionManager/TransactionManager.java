@@ -76,7 +76,9 @@ public class TransactionManager implements Runnable{
 
     public void removeActiveTransaction(int xid){
         synchronized (activeTxns){
+            System.out.println("removing an transaction : " + xid);
             activeTxns.remove(xid);
+            System.out.println("removing an transaction is active: " + isActive(xid));
         }
     }
 

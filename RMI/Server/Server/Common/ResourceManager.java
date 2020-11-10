@@ -32,7 +32,6 @@ public class ResourceManager implements IResourceManager
 	public void putData(String key, RMItem value) throws RemoteException {
 		synchronized(m_data){
 			m_data.put(key, value);
-			System.out.println(" put data called, value is: " + m_data.get(key));
 		}
 	}
 
@@ -42,6 +41,8 @@ public class ResourceManager implements IResourceManager
 
 	public void removeTrax(int xid) throws RemoteException {
 		tm.removeActiveTransaction(xid);
+		System.out.println("removeTrax: xid is active" + xid + " " + tm.isActive(xid));
+
 	}
 
 	public void addNewTrax(int xid) throws RemoteException {
@@ -54,14 +55,14 @@ public class ResourceManager implements IResourceManager
 
 	protected RMItem readData(int xid, String key) throws InvalidTransactionException
 	{
+		System.out.println("xid is active" + xid + " " + tm.isActive(xid));
 		if(!tm.isActive(xid))
-			throw new InvalidTransactionException(xid, "Not a valid transaction");
+			throw new InvalidTransactionException(xid, " Server: Not a valid transaction");
 		Transaction t = tm.getActiveTransaction(xid);
 		// If the data exists from the previous committed transactions
 		if (t.readCopyData(xid, key)==null) {
 			synchronized (m_data) {
 				if (m_data.get(key) != null) {
-					System.out.println("transaction t " + t);
 					t.writeCopyData(xid, key, (RMItem) m_data.get(key).clone());
 				}
 				else {
@@ -75,7 +76,7 @@ public class ResourceManager implements IResourceManager
 	protected void writeData(int xid, String key, RMItem value) throws InvalidTransactionException
 	{
 		if(!tm.isActive(xid))
-			throw new InvalidTransactionException(xid, "Not a valid transaction");
+			throw new InvalidTransactionException(xid, " Server: Not a valid transaction");
 		readData(xid, key);
 		Transaction t = tm.getActiveTransaction(xid);
 		t.writeCopyData(xid, key, value);
@@ -84,7 +85,7 @@ public class ResourceManager implements IResourceManager
 	protected void removeData(int xid, String key) throws InvalidTransactionException
 	{
 		if(!tm.isActive(xid))
-			throw new InvalidTransactionException(xid, "Not a valid transaction");
+			throw new InvalidTransactionException(xid, " Server: Not a valid transaction");
 		readData(xid, key);
 		Transaction t = tm.getActiveTransaction(xid);
 		t.removeCopyData(xid, key);
@@ -355,7 +356,7 @@ public class ResourceManager implements IResourceManager
 
 	public int newCustomer(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-        	Trace.info("ResourceManager: newCustomer(" + xid + ") called");
+		Trace.info("ResourceManager: newCustomer(" + xid + ") called");
 		// Generate a globally unique ID for the new customer
 		int cid = Integer.parseInt(String.valueOf(xid) +
 			String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
@@ -494,7 +495,7 @@ public class ResourceManager implements IResourceManager
 //		System.out.println("Abort transaction:" + xid);
 //
 //		if(!tm.isActive(xid))
-//			throw new InvalidTransactionException(xid, "Not a valid transaction");
+//			throw new InvalidTransactionException(xid, " Server: Not a valid transaction");
 //
 //		tm.addActiveTransaction(xid, null);
 //		tm.writeInactiveData(xid, new Boolean(false));
