@@ -41,7 +41,7 @@ public class Middleware extends ResourceManager {
     protected static int carRM_serverPort;
     protected static int roomRM_serverPort;
 
-    
+
     protected IResourceManager flightRM = null;
     protected IResourceManager carRM = null;
     protected IResourceManager roomRM = null;
@@ -58,7 +58,7 @@ public class Middleware extends ResourceManager {
         traxManager.setLockManager(lockManager);
         this.setTransactionManager(traxManager);
     }
-   
+
     private static String s_serverName = "Middleware";
     private static String s_rmiPrefix = "group_24_";
 
@@ -250,69 +250,69 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: addFlight");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
-        Trace.info("Middleware: addFlight");
         lockData(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
         forwardTraxToRM(xid,FLIGHT_RM);
         return flightRM.addFlight(xid, flightNum, flightSeats, flightPrice);
     }
 
     public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: addCars");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
-        Trace.info("Middleware: addCars");
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         forwardTraxToRM(xid, CAR_RM);
         return carRM.addCars(xid, location, numCars, price);
     }
 
     public boolean addRooms(int xid, String location, int numRooms, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: addRooms");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
-        Trace.info("Middleware: addRooms");
         lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         forwardTraxToRM(xid,ROOM_RM);
         return roomRM.addRooms(xid, location, numRooms, price);
     }
 
     public boolean deleteFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: deleteFlight");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
-        Trace.info("Middleware: deleteFlight");
         lockData(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
         forwardTraxToRM(xid,FLIGHT_RM);
         return flightRM.deleteFlight(xid, flightNum);
     }
 
     public boolean deleteCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: deleteCars");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
-        Trace.info("Middleware: deleteCars");
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         forwardTraxToRM(xid,CAR_RM);
         return carRM.deleteCars(xid, location);
     }
 
     public boolean deleteRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: deleteRooms");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
-        Trace.info("Middleware: deleteRooms");
         lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         forwardTraxToRM(xid,ROOM_RM);
         return roomRM.deleteRooms(xid, location);
     }
-    
+
     public int queryFlight(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
         Trace.info("Middlware: queryFlight");
         if(!traxManager.isActive(xid))
@@ -325,9 +325,9 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryCars");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-        Trace.info("Middleware: queryCars");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
@@ -343,6 +343,11 @@ public class Middleware extends ResourceManager {
         trx.resetTimer();
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
         forwardTraxToRM(xid,CUSTOMER_RM);
+        Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
+        if(customer == null){
+            Trace.info("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
+            return "customer(" + xid + ", " + customerID + ") doesn't exist\n";
+        }
         return flightRM.queryCustomerInfo(xid,customerID) + carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1] + roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1];
     }
 
@@ -369,9 +374,9 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryCarsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryCarsPrice");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-        Trace.info("Middleware: queryCarsPrice");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
@@ -380,9 +385,9 @@ public class Middleware extends ResourceManager {
     }
 
     public int queryRoomsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Middleware: queryRoomsPrice");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-        Trace.info("Middleware: queryRoomsPrice");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
@@ -392,9 +397,9 @@ public class Middleware extends ResourceManager {
 
     public int newCustomer(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        Trace.info("Middleware: newCustomer(" + xid + ")");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-        Trace.info("Middleware: newCustomer(" + xid + ")");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         int cid = Integer.parseInt(String.valueOf(xid) +
@@ -415,9 +420,9 @@ public class Middleware extends ResourceManager {
 
     public boolean newCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        Trace.info("Middleware: newCustomer(" + xid + ", " + customerID + ")");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-        Trace.info("Middleware: newCustomer(" + xid + ", " + customerID + ")");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
@@ -441,9 +446,9 @@ public class Middleware extends ResourceManager {
 
     public boolean deleteCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        Trace.info("Middleware: deleteCustomer(" + xid + ", " + customerID + ")");
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-        Trace.info("Middleware: deleteCustomer(" + xid + ", " + customerID + ")");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
@@ -472,8 +477,7 @@ public class Middleware extends ResourceManager {
                 }
             }
             removeData(xid, customer.getKey());
-            Trace.info("Middleware: customer(" + xid + ", " + customerID + ") deleted");
-            return true;
+            return flightRM.deleteCustomer(xid, customerID) && roomRM.deleteCustomer(xid, customerID) && carRM.deleteCustomer(xid, customerID);
         } else {
             Trace.warn("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
             return false;
@@ -482,31 +486,30 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        Trace.info("Middleware: reserveFlight(" + xid + ", customer=" + customerID + ", " + flightNumber + ")" );
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         String key = Flight.getKey(flightNumber);
-        Trace.info("Middleware: reserveFlight(" + xid + ", customer=" + customerID + ", " + key + ")" );
-
+        Trace.info("Middleware: reserve fight for (" + xid + ", customer=" + customerID + ", " + key + ")" );
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
         forwardTraxToRM(xid,CUSTOMER_RM);
         lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
         forwardTraxToRM(xid,FLIGHT_RM);
-
         return flightRM.reserveFlight(xid, customerID, flightNumber);
     }
 
 
     public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        Trace.info("Middleware: reserveCar(" + xid + ", customer=" + customerID + ", " + location + ")" );
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         String key = Car.getKey(location);
-        Trace.info("Middleware: reserveCar(" + xid + ", customer=" + customerID + ", " + key + ")" );
-
+        Trace.info("Middleware: reserve car for (" + xid + ", customer=" + customerID + ", " + key + ")" );
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
         forwardTraxToRM(xid,CUSTOMER_RM);
         lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
@@ -517,13 +520,13 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        Trace.info("Middleware: reserveRoom(" + xid + ", customer=" + customerID + ", " + location + ")" );
         if(!traxManager.isActive(xid))
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         String key = Room.getKey(location);
-        Trace.info("Middleware: reserveRoom(" + xid + ", customer=" + customerID + ", " + key + ")" );
-
+        Trace.info("Middleware: reserve room for (" + xid + ", customer=" + customerID + ", " + key + ")" );
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
         forwardTraxToRM(xid,CUSTOMER_RM);
         lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
