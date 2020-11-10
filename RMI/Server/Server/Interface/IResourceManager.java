@@ -60,7 +60,7 @@ public interface IResourceManager extends Remote
     public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException;
 
     public void abort(int xid) throws RemoteException, InvalidTransactionException;
-   // public RMHashMap getM_data() throws RemoteException;
+
     /**
      * Add seats to a flight.
      *

@@ -55,6 +55,7 @@ public class Middleware extends ResourceManager {
 
         lockManager = new LockManager();
         traxManager = new TransactionManager();
+        traxManager.setLockManager(lockManager);
         this.setTransactionManager(traxManager);
     }
    
@@ -176,6 +177,11 @@ public class Middleware extends ResourceManager {
         int xid  = traxManager.start();
         Trace.info("Start transaction " + xid);
         return xid;
+    }
+
+    public void abort(int xid) throws RemoteException, InvalidTransactionException {
+        traxManager.abort(xid);
+        lockManager.UnlockAll(xid);
     }
 
     public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
@@ -804,6 +810,7 @@ public class Middleware extends ResourceManager {
         } catch (DeadlockException e) {
             Trace.info("Middleware: deadlock detected: lock(" + xid + ", " + data + ", " + lockType + ") " + e.getLocalizedMessage());
             traxManager.abort(xid);
+            lockManager.UnlockAll(xid);
             throw new TransactionAbortedException(xid, "Deadlock detected: abort transaction");
         }
     }

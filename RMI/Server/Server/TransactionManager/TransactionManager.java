@@ -4,14 +4,20 @@ import Server.Interface.InvalidTransactionException;
 import Server.Middleware.Middleware;
 import java.util.*;
 import Server.Common.*;
+import Server.LockManager.*;
 
 public class TransactionManager implements Runnable{
     private HashMap<Integer, Transaction> activeTxns;
     private int counter;
+    private LockManager lm;
 
     public TransactionManager(){    // Middleware mdw
         this.activeTxns = new HashMap<Integer, Transaction>();
         this.counter = 0;
+    }
+
+    public void setLockManager(LockManager lm){
+        this.lm = lm;
     }
 
     public int start(){
@@ -34,6 +40,7 @@ public class TransactionManager implements Runnable{
                         if (activeTxns.get(xid).hasExpired()) {
                             try {
                                 abort(xid);
+                                lm.UnlockAll(xid);
                             } catch(Exception e){
                                 e.printStackTrace(System.out);
                             }
@@ -74,11 +81,9 @@ public class TransactionManager implements Runnable{
     }
 
     public void abort(int xid) throws InvalidTransactionException{
-        // TODO
         Trace.info("Transaction manager: Aborted transaction " + xid);
 		if(!isActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
-
         removeActiveTransaction(xid);
     }
 }
