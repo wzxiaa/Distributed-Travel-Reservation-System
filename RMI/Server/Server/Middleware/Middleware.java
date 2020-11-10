@@ -5,13 +5,13 @@ import Server.LockManager.*;
 import java.util.Vector;
 import java.rmi.ConnectException;
 
-
 import Server.Interface.*;
 import java.util.*;
 import java.io.*;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.rmi.RemoteException;
 import java.rmi.NotBoundException;
 
@@ -25,9 +25,22 @@ public class Middleware extends ResourceManager {
     public static final String CAR_RM = "Car";
     public static final String CUSTOMER_RM = "Customer";
 
-    protected static ServerConfig s_flightServer;
-    protected static ServerConfig s_carServer;
-    protected static ServerConfig s_roomServer;
+    // protected static ServerConfig s_flightServer;
+    // protected static ServerConfig s_carServer;
+    // protected static ServerConfig s_roomServer;
+
+    protected static String flightRM_serverName;
+    protected static String carRM_serverName;
+    protected static String roomRM_serverName;
+
+    protected static String flightRM_serverHost;
+    protected static String carRM_serverHost;
+    protected static String roomRM_serverHost;
+
+    protected static int flightRM_serverPort;
+    protected static int carRM_serverPort;
+    protected static int roomRM_serverPort;
+
     
     protected IResourceManager flightRM = null;
     protected IResourceManager carRM = null;
@@ -44,6 +57,120 @@ public class Middleware extends ResourceManager {
         traxManager = new TransactionManager();
         this.setTransactionManager(traxManager);
     }
+   
+    private static String s_serverName = "Middleware";
+    private static String s_rmiPrefix = "group_24";
+
+    public static void main(String[] args) {
+
+        // Args: name,host,port: Flight,localhost,1099
+        if (args.length == 3) {
+            try {
+                String[] flightInfo = args[0].split(",");
+                String[] carInfo = args[1].split(",");
+                String[] roomInfo = args[2].split(",");
+
+                // s_flightServer = new ServerConfig(s_rmiPrefix + flightInfo[0],flightInfo[1],flightInfo[2]);
+                // s_carServer = new ServerConfig(s_rmiPrefix + carInfo[0],carInfo[1],carInfo[2]);
+                // s_roomServer = new ServerConfig(s_rmiPrefix + roomInfo[0],roomInfo[1],roomInfo[2]);
+
+                flightRM_serverName=s_rmiPrefix + flightInfo[0];
+                flightRM_serverHost=flightInfo[1];
+                flightRM_serverPort=Integer.parseInt(flightInfo[2]);
+
+                carRM_serverName=s_rmiPrefix + carInfo[0];
+                carRM_serverHost=carInfo[1];
+                carRM_serverPort=Integer.parseInt(carInfo[2]);
+
+                roomRM_serverName=s_rmiPrefix + roomInfo[0];
+                roomRM_serverHost=roomInfo[1];
+                roomRM_serverPort=Integer.parseInt(roomInfo[2]);
+
+            }
+            catch(Exception e){
+                System.err.println((char)27 + "[31;1mMiddleware exception: " + (char)27 + "[0mUncaught exception");
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+        else {
+            System.err.println((char)27 + "[31;1mMiddleware exception: " + (char)27 + "[0mInvalid number of arguments; expected 3 args");
+            System.exit(1);
+        }
+
+        // Set the security policy
+        if (System.getSecurityManager() == null)
+        {
+            System.setSecurityManager(new SecurityManager());
+        }
+
+        // Try to connect to the ResourceManagers and register middleware resource manager
+        try {
+            Middleware middleware = new Middleware(s_serverName);
+            middleware.connectServers();
+            middleware.createServerEntry();
+        }
+        catch (Exception e) {
+            System.err.println((char)27 + "[31;1mMiddleware exception: " + (char)27 + "[0mUncaught exception");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+    }
+
+
+    public void connectServers()
+    {
+        // connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
+        // connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
+        // connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
+
+        connectServer("Flight", flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
+        connectServer("Car",carRM_serverHost, carRM_serverPort, carRM_serverName);
+        connectServer("Room", roomRM_serverHost, roomRM_serverPort, roomRM_serverName);
+    }
+
+    public void createServerEntry() {
+        // Create the RMI server entry
+        try {
+            // we don't need to create a Middleware object, since 'this' already is one
+
+            // Dynamically generate the stub (client proxy)
+            IResourceManager resourceManager = (IResourceManager)UnicastRemoteObject.exportObject(this, 0);
+
+            // Bind the remote object's stub in the registry
+            Registry l_registry;
+            try {
+                l_registry = LocateRegistry.createRegistry(1099);
+            } catch (RemoteException e) {
+                l_registry = LocateRegistry.getRegistry(1099);
+            }
+            final Registry registry = l_registry;
+            registry.rebind(s_rmiPrefix + s_serverName, resourceManager);
+
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                public void run() {
+                    try {
+                        registry.unbind(s_rmiPrefix + s_serverName);
+                        System.out.println("'" + s_serverName + "' resource manager unbound");
+                    }
+                    catch(Exception e) {
+                        //System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+                        //e.printStackTrace();
+                    }
+                    System.out.println("'" + s_serverName + "' Shut down");
+                }
+            });
+            System.out.println("'" + s_serverName + "' resource manager server ready and bound to '" + s_rmiPrefix + s_serverName + "'");
+        }
+        catch (Exception e) {
+            System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+
 
     public int start() throws RemoteException{
         int xid  = traxManager.start();
@@ -69,20 +196,20 @@ public class Middleware extends ResourceManager {
             }
         }
         if (relatedRM[1]){
-            synchronized (flightRM.m_data) {
+            synchronized (roomRM.m_data) {
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    flightRM.m_data.put(key, m.get(key));
+                    roomRM.m_data.put(key, m.get(key));
                 }
             }
         }
         if (relatedRM[2]){
-            synchronized (flightRM.m_data) {
+            synchronized (carRM.m_data) {
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    flightRM.m_data.put(key, m.get(key));
+                    carRM.m_data.put(key, m.get(key));
                 }
             }
         }
@@ -712,20 +839,23 @@ public class Middleware extends ResourceManager {
                     }
                 }
 
+
+
+
             } catch (ConnectException e) {
                 switch (resource) {
                     case FLIGHT_RM: {
-                        connectServer(FLIGHT_RM, s_flightServer.host, s_flightServer.port, s_flightServer.name);
+                        connectServer(FLIGHT_RM, flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
                         flightRM.addTransaction(xid);
                         break;
                     }
                     case CAR_RM: {
-                        connectServer(CAR_RM, s_carServer.host, s_carServer.port, s_carServer.name);
+                        connectServer(CAR_RM, carRM_serverHost, carRM_serverPort, carRM_serverName);
                         carRM.addTransaction(xid);
                         break;
                     }
                     case ROOM_RM: {
-                        connectServer(ROOM_RM, s_roomServer.host, s_roomServer.port, s_roomServer.name);
+                        connectServer(ROOM_RM, roomRM_serverHost, roomRM_serverPort, roomRM_serverName);
                         roomRM.addTransaction(xid);
                         break;
                     }

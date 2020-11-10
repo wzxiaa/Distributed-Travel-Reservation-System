@@ -19,7 +19,7 @@ import java.rmi.server.UnicastRemoteObject;
 public class RMIResourceManager extends ResourceManager 
 {
 	private static String s_serverName = "Server";
-	private static String s_rmiPrefix = "group7";
+	private static String s_rmiPrefix = "group_24";
 	private static int s_serverPort;
 
 	public static void main(String args[])
@@ -27,7 +27,7 @@ public class RMIResourceManager extends ResourceManager
 		if (args.length > 0)
 		{
 			s_serverName = args[0];
-			s_serverPort = Integer.parseInt(args[1]);
+			//s_serverPort = Integer.parseInt(args[1]);
 
 		}
 			
@@ -42,9 +42,9 @@ public class RMIResourceManager extends ResourceManager
 			// Bind the remote object's stub in the registry
 			Registry l_registry;
 			try {
-				l_registry = LocateRegistry.createRegistry(s_serverPort);
+				l_registry = LocateRegistry.createRegistry(1099);
 			} catch (RemoteException e) {
-				l_registry = LocateRegistry.getRegistry(s_serverPort);
+				l_registry = LocateRegistry.getRegistry(1099);
 			}
 			final Registry registry = l_registry;
 			registry.rebind(s_rmiPrefix + s_serverName, resourceManager);
