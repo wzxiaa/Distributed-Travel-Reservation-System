@@ -198,7 +198,7 @@ public class Middleware extends ResourceManager {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     flightRM.m_data.put(key, m.get(key));
                 }
-                flightRM.removeDataFromTrax(xid);
+                flightRM.removeTrax(xid);
             }
         }
         if (relatedRM[1]){
@@ -207,7 +207,7 @@ public class Middleware extends ResourceManager {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     roomRM.m_data.put(key, m.get(key));
                 }
-                roomRM.removeDataFromTrax(xid);
+                roomRM.removeTrax(xid);
             }
         }
         if (relatedRM[2]){
@@ -216,7 +216,7 @@ public class Middleware extends ResourceManager {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     carRM.m_data.put(key, m.get(key));
                 }
-                carRM.removeDataFromTrax(xid);
+                carRM.removeTrax(xid);
             }
         }
         //if it is customer, we need all resources managers to work

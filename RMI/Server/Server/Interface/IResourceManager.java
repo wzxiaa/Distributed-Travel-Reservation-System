@@ -47,7 +47,7 @@ public interface IResourceManager extends Remote
 //
     public RMHashMap getTraxData(int xid) throws RemoteException;
 
-    public void removeDataFromTrax(int xid) throws RemoteException;
+    public void removeTrax(int xid) throws RemoteException;
 
     public RMHashMap m_data = new RMHashMap();
 

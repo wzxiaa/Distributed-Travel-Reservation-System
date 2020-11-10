@@ -33,7 +33,7 @@ public class ResourceManager implements IResourceManager
 		return tm.getActiveTransaction(xid).get_TMPdata();
 	}
 
-	public void removeDataFromTrax(int xid) throws RemoteException {
+	public void removeTrax(int xid) throws RemoteException {
 		tm.removeActiveTransaction(xid);
 	}
 
