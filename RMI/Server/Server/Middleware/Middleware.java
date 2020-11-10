@@ -59,7 +59,7 @@ public class Middleware extends ResourceManager {
     }
    
     private static String s_serverName = "Middleware";
-    private static String s_rmiPrefix = "group_24";
+    private static String s_rmiPrefix = "group_24_";
 
     public static void main(String[] args) {
 
@@ -188,32 +188,29 @@ public class Middleware extends ResourceManager {
 
         if (relatedRM[0]){
             synchronized (flightRM.m_data){
-                Transaction flightTrans = flightRM.tm.getActiveTransaction(xid);
-                for (String key : flightTrans.get_TMPdata().keySet()) {
+                for (String key : flightRM.getTraxData(xid).keySet()) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     flightRM.m_data.put(key, m.get(key));
                 }
-                flightRM.tm.removeActiveTransaction(xid);
+                flightRM.removeDataFromTrax(xid);
             }
         }
         if (relatedRM[1]){
             synchronized (roomRM.m_data) {
-                Transaction roomTrans = flightRM.tm.getActiveTransaction(xid);
-                for (String key : roomTrans.get_TMPdata().keySet()) {
+                for (String key : roomRM.getTraxData(xid).keySet()) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     roomRM.m_data.put(key, m.get(key));
                 }
-                roomRM.tm.removeActiveTransaction(xid);
+                roomRM.removeDataFromTrax(xid);
             }
         }
         if (relatedRM[2]){
             synchronized (carRM.m_data) {
-                Transaction carTrans = flightRM.tm.getActiveTransaction(xid);
-                for (String key : carTrans.get_TMPdata().keySet()) {
+                for (String key : carRM.getTraxData(xid).keySet()) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     carRM.m_data.put(key, m.get(key));
                 }
-                carRM.tm.removeActiveTransaction(xid);
+                carRM.removeDataFromTrax(xid);
             }
         }
         //if it is customer, we need all resources managers to work
@@ -817,51 +814,46 @@ public class Middleware extends ResourceManager {
 
         try {
             try {
-
                 switch (resource) {
                     case FLIGHT_RM: {
-                        flightRM.addTransaction(xid);
+                        flightRM.addNewTrax(xid);
                         break;
                     }
                     case CAR_RM: {
-                        carRM.addTransaction(xid);
+                        carRM.addNewTrax(xid);
                         break;
                     }
                     case ROOM_RM: {
-                        roomRM.addTransaction(xid);
+                        roomRM.addNewTrax(xid);
                         break;
                     }
                     case CUSTOMER_RM: {
-                        this.addTransaction(xid);
-                        flightRM.addTransaction(xid);
-                        carRM.addTransaction(xid);
-                        roomRM.addTransaction(xid);
+                        this.addNewTrax(xid);
+                        flightRM.addNewTrax(xid);
+                        carRM.addNewTrax(xid);
+                        roomRM.addNewTrax(xid);
                         break;
                     }
                 }
-
-
-
-
             } catch (ConnectException e) {
                 switch (resource) {
                     case FLIGHT_RM: {
                         connectServer(FLIGHT_RM, flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
-                        flightRM.addTransaction(xid);
+                        flightRM.addNewTrax(xid);
                         break;
                     }
                     case CAR_RM: {
                         connectServer(CAR_RM, carRM_serverHost, carRM_serverPort, carRM_serverName);
-                        carRM.addTransaction(xid);
+                        carRM.addNewTrax(xid);
                         break;
                     }
                     case ROOM_RM: {
                         connectServer(ROOM_RM, roomRM_serverHost, roomRM_serverPort, roomRM_serverName);
-                        roomRM.addTransaction(xid);
+                        roomRM.addNewTrax(xid);
                         break;
                     }
                     case CUSTOMER_RM: {
-                        this.addTransaction(xid);
+                        this.addNewTrax(xid);
                     }
                 }
             }

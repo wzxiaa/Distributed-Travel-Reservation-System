@@ -13,11 +13,11 @@ FORCE: ;
 
 ../Server/RMItem.jar: ../Server/Server/Common/RMItem.java
 	@echo "make -C RMItem"
-	make -C ../Server/ RMItem.jar
+	make -C ../Server/RMItem.jar
 
 ../Server/RMHashMap.jar: ../Server/Server/Common/RMHashMap.java
 	@echo "make -C RMHashMap"
-	make -C ../Server/ RMHashMap.jar
+	make -C ../Server/RMHashMap.jar
 
 compile-client: ../Server/RMIInterface.jar ../Server/RMHashMap.jar ../Server/RMItem.jar
 	javac -cp ../Server/RMIInterface.jar:../Server/RMHashMap.jar:../Server/RMItem.jar Client/*.java

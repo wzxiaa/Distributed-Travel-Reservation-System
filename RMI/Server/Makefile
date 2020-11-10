@@ -28,6 +28,7 @@ compile-server-rmi: Server/Interface/IResourceManager.java Server/Common/*.java 
 
 clean:
 	rm -f RMIInterface.jar
+	rm -f TransactionManager.jar
 	rm -f RMHashMap.jar
 	rm -f RMItem.jar	
 	rm -f java.policy 

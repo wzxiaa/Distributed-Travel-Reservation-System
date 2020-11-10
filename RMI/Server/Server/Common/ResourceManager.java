@@ -18,13 +18,9 @@ public class ResourceManager implements IResourceManager
 {
 	protected String m_name = "";
 	public RMHashMap m_data = new RMHashMap();
-	protected TransactionManager tm;
+	public TransactionManager tm;
 
-	// public RMHashMap getM_data() {
-	// 	return m_data;
-	// }
-	public ResourceManager(String p_name)
-	{
+	public ResourceManager(String p_name) {
 		m_name = p_name;
 		tm = new TransactionManager();
 	}
@@ -33,15 +29,21 @@ public class ResourceManager implements IResourceManager
 		this.tm = tm;
 	}
 
-	public void addTransaction(int xid) throws RemoteException {
-		Trace.info("RM::addTransaction(" + xid + ") called");
+	public RMHashMap getTraxData(int xid) throws RemoteException {
+		return tm.getActiveTransaction(xid).get_TMPdata();
+	}
+
+	public void removeDataFromTrax(int xid) throws RemoteException {
+		tm.removeActiveTransaction(xid);
+	}
+
+	public void addNewTrax(int xid) throws RemoteException {
+		Trace.info("Server: adding new transaction " + xid);
 		if (!tm.isActive(xid)) {
-			Trace.info("Transaction added");
 			Transaction t = new Transaction(xid);
 			tm.addActiveTransaction(xid, t);
 		}
 	}
-
 
 	// Reads a data item
 	protected RMItem readData(int xid, String key) throws InvalidTransactionException
@@ -452,7 +454,6 @@ public class ResourceManager implements IResourceManager
 		return summary;
 	}
 
-
 	public int start() throws RemoteException{
 		return 0;
 	}
@@ -460,11 +461,8 @@ public class ResourceManager implements IResourceManager
 	public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
 		return false;
 	}
-	
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {
-		// TODO Auto-generated method stub
-		
 	}
 
 	public boolean shutdown() throws RemoteException {

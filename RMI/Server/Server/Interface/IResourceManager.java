@@ -45,19 +45,16 @@ public interface IResourceManager extends Remote
 //    public void abort(int xid)
 //            throws RemoteException, InvalidTransactionException;
 //
+    public RMHashMap getTraxData(int xid) throws RemoteException;
 
-public RMHashMap m_data = new RMHashMap();
-   /**
-    * Shutdown
-    * @return Success
-    */
-   public boolean shutdown()
-           throws RemoteException;
+    public void removeDataFromTrax(int xid) throws RemoteException;
 
-    /**
-     * Add transaction to an resource manager's TransactionManager
-     */
-    public void addTransaction(int xid) throws RemoteException;
+    public RMHashMap m_data = new RMHashMap();
+
+    public boolean shutdown()  throws RemoteException;
+
+    public void addNewTrax(int xid) throws RemoteException;
+
     public int start() throws RemoteException;
 
     public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException;

@@ -15,13 +15,11 @@ public class Transaction {
     private long startTime;
     private boolean[] relatedRM;
 
-
     public Transaction(int xid){
         this.xid = xid;
         this.startTime = (new Date()).getTime();
         this.relatedRM = new boolean[3];
     }
-
 
     public RMHashMap get_TMPdata(){
 		return tmpData;
@@ -38,7 +36,6 @@ public class Transaction {
         System.out.println("Timout rest");
         this.startTime = (new Date()).getTime();
     }
-
 
     public void setRelatedRM(String rm) {
         switch (rm) {
