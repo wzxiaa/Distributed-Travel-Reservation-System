@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.util.*;
 
 import Server.Common.RMHashMap;
+import Server.Common.RMItem;
 
 /** 
  * Simplified version from CSE 593 Univ. of Washington
@@ -46,6 +47,8 @@ public interface IResourceManager extends Remote
 //            throws RemoteException, InvalidTransactionException;
 //
     public RMHashMap getTraxData(int xid) throws RemoteException;
+
+    public void putData(String key, RMItem value) throws RemoteException;
 
     public void removeTrax(int xid) throws RemoteException;
 

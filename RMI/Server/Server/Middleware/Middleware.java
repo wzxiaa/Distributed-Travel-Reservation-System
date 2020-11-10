@@ -192,33 +192,6 @@ public class Middleware extends ResourceManager {
         RMHashMap m = t.get_TMPdata();
         boolean[] relatedRM = t.getRelatedRMs();
 
-        if (relatedRM[0]){
-            synchronized (flightRM.m_data){
-                for (String key : flightRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    flightRM.m_data.put(key, m.get(key));
-                }
-                flightRM.removeTrax(xid);
-            }
-        }
-        if (relatedRM[1]){
-            synchronized (roomRM.m_data) {
-                for (String key : roomRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    roomRM.m_data.put(key, m.get(key));
-                }
-                roomRM.removeTrax(xid);
-            }
-        }
-        if (relatedRM[2]){
-            synchronized (carRM.m_data) {
-                for (String key : carRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    carRM.m_data.put(key, m.get(key));
-                }
-                carRM.removeTrax(xid);
-            }
-        }
         //if it is customer, we need all resources managers to work
         if (relatedRM[0] && relatedRM[1] && relatedRM[2]) {
             synchronized (m_data) {
@@ -229,6 +202,34 @@ public class Middleware extends ResourceManager {
                 traxManager.removeActiveTransaction(xid);
             }
         }
+        if (relatedRM[0]){
+         //   synchronized (flightRM.m_data){
+                for (String key : flightRM.getTraxData(xid).keySet()) {
+                    System.out.println("Write:(" + key + "," + flightRM.getTraxData(xid).get(key) + ")");
+                    flightRM.putData(key, flightRM.getTraxData(xid).get(key));
+                }
+                flightRM.removeTrax(xid);
+          //  }
+        }
+        if (relatedRM[1]){
+            //synchronized (roomRM.m_data) {
+                for (String key : roomRM.getTraxData(xid).keySet()) {
+                    System.out.println("Write:(" + key + "," + roomRM.getTraxData(xid).get(key) + ")");
+                    roomRM.putData(key, roomRM.getTraxData(xid).get(key));
+                }
+                roomRM.removeTrax(xid);
+            //}
+        }
+        if (relatedRM[2]){
+            //synchronized (carRM.m_data) {
+                for (String key : carRM.getTraxData(xid).keySet()) {
+                    System.out.println("Write:(" + key + "," + carRM.getTraxData(xid).get(key) + ")");
+                    carRM.putData(key, carRM.getTraxData(xid).get(key));
+                }
+                carRM.removeTrax(xid);
+            //}
+        }
+
 
         lockManager.UnlockAll(xid);
         return true;
@@ -258,7 +259,7 @@ public class Middleware extends ResourceManager {
         trx.resetTimer();
         Trace.info("Middleware: addFlight");
         lockData(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(xid,FLIGHT_RM);
+        forwardTraxToRM(xid,FLIGHT_RM);
         return flightRM.addFlight(xid, flightNum, flightSeats, flightPrice);
     }
 
@@ -267,7 +268,7 @@ public class Middleware extends ResourceManager {
         trx.resetTimer();
         Trace.info("Middleware: addCars");
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(xid, CAR_RM);
+        forwardTraxToRM(xid, CAR_RM);
         return carRM.addCars(xid, location, numCars, price);
     }
 
@@ -276,7 +277,7 @@ public class Middleware extends ResourceManager {
         trx.resetTimer();
         Trace.info("Middleware: addRooms");
         lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(xid,ROOM_RM);
+        forwardTraxToRM(xid,ROOM_RM);
         return roomRM.addRooms(xid, location, numRooms, price);
     }
 
@@ -285,7 +286,7 @@ public class Middleware extends ResourceManager {
         trx.resetTimer();
         Trace.info("Middleware: deleteFlight");
         lockData(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(xid,FLIGHT_RM);
+        forwardTraxToRM(xid,FLIGHT_RM);
         return flightRM.deleteFlight(xid, flightNum);
     }
 
@@ -294,7 +295,7 @@ public class Middleware extends ResourceManager {
         trx.resetTimer();
         Trace.info("Middleware: deleteCars");
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(xid,CAR_RM);
+        forwardTraxToRM(xid,CAR_RM);
         return carRM.deleteCars(xid, location);
     }
 
@@ -303,7 +304,7 @@ public class Middleware extends ResourceManager {
         trx.resetTimer();
         Trace.info("Middleware: deleteRooms");
         lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(xid,ROOM_RM);
+        forwardTraxToRM(xid,ROOM_RM);
         return roomRM.deleteRooms(xid, location);
     }
     
@@ -312,7 +313,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,FLIGHT_RM);
+        forwardTraxToRM(xid,FLIGHT_RM);
         return flightRM.queryFlight(xid, flightNumber);
     }
 
@@ -321,7 +322,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CAR_RM);
+        forwardTraxToRM(xid,CAR_RM);
         return carRM.queryCars(xid, location);
     }
 
@@ -330,8 +331,8 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CUSTOMER_RM);
-        return super.queryCustomerInfo(xid,customerID);
+        forwardTraxToRM(xid,CUSTOMER_RM);
+        return flightRM.queryCustomerInfo(xid,customerID) + carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1] + roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1];
     }
 
     public int queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
@@ -339,7 +340,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,ROOM_RM);
+        forwardTraxToRM(xid,ROOM_RM);
         return roomRM.queryRooms(xid, location);
     }
 
@@ -348,7 +349,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,FLIGHT_RM);
+        forwardTraxToRM(xid,FLIGHT_RM);
         return flightRM.queryFlightPrice(xid, flightNumber);
     }
 
@@ -357,7 +358,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CAR_RM);
+        forwardTraxToRM(xid,CAR_RM);
         return carRM.queryCarsPrice(xid, location);
     }
 
@@ -366,7 +367,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,ROOM_RM);
+        forwardTraxToRM(xid,ROOM_RM);
         return roomRM.queryRoomsPrice(xid, location);
     }
 
@@ -380,7 +381,7 @@ public class Middleware extends ResourceManager {
                 String.valueOf(Math.round(Math.random() * 100 + 1)));
         Customer customer = new Customer(cid);
         lockData(xid, customer.getKey(), TransactionLockObject.LockType.LOCK_WRITE);
-        addResourceManagerUsed(xid,CUSTOMER_RM);
+        forwardTraxToRM(xid,CUSTOMER_RM);
 
         writeData(xid, customer.getKey(), customer);
         flightRM.newCustomer(xid, cid);
@@ -397,7 +398,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CUSTOMER_RM);
+        forwardTraxToRM(xid,CUSTOMER_RM);
 
         Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
         if (customer != null){
@@ -421,7 +422,7 @@ public class Middleware extends ResourceManager {
         Transaction trx = traxManager.getActiveTransaction(xid);
         trx.resetTimer();
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CUSTOMER_RM);
+        forwardTraxToRM(xid,CUSTOMER_RM);
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer != null) {
             // First, remove all the reservations related to the customer. Then, remove the customer from DB.
@@ -433,13 +434,13 @@ public class Middleware extends ResourceManager {
                 String key = reserveditem.getKey();
                 int count = reserveditem.getCount();
                 if (type.equals(FLIGHT_RM)) {
-                    addResourceManagerUsed(xid,FLIGHT_RM);
+                    forwardTraxToRM(xid,FLIGHT_RM);
                     flightRM.removeReservation(xid, customerID, key, count);
                 } else if (type.equals(CAR_RM)) {
-                    addResourceManagerUsed(xid,CAR_RM);
+                    forwardTraxToRM(xid,CAR_RM);
                     carRM.removeReservation(xid, customerID, key, count);
                 } else if (type.equals(ROOM_RM)) {
-                    addResourceManagerUsed(xid,ROOM_RM);
+                    forwardTraxToRM(xid,ROOM_RM);
                     roomRM.removeReservation(xid, customerID, key, count);
                 } else {
                     Trace.warn("Middleware: deleteCustomer type not recognized");
@@ -462,9 +463,9 @@ public class Middleware extends ResourceManager {
         Trace.info("Middleware: reserveFlight(" + xid + ", customer=" + customerID + ", " + key + ")" );
 
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CUSTOMER_RM);
+        forwardTraxToRM(xid,CUSTOMER_RM);
         lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,FLIGHT_RM);
+        forwardTraxToRM(xid,FLIGHT_RM);
 
         return flightRM.reserveFlight(xid, customerID, flightNumber);
     }
@@ -478,9 +479,9 @@ public class Middleware extends ResourceManager {
         Trace.info("Middleware: reserveCar(" + xid + ", customer=" + customerID + ", " + key + ")" );
 
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CUSTOMER_RM);
+        forwardTraxToRM(xid,CUSTOMER_RM);
         lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CAR_RM);
+        forwardTraxToRM(xid,CAR_RM);
 
         return carRM.reserveCar(xid, customerID, location);
     }
@@ -493,9 +494,9 @@ public class Middleware extends ResourceManager {
         Trace.info("Middleware: reserveRoom(" + xid + ", customer=" + customerID + ", " + key + ")" );
 
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,CUSTOMER_RM);
+        forwardTraxToRM(xid,CUSTOMER_RM);
         lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(xid,ROOM_RM);
+        forwardTraxToRM(xid,ROOM_RM);
 
         return carRM.reserveRoom(xid, customerID, location);
     }
@@ -507,7 +508,7 @@ public class Middleware extends ResourceManager {
         //checkTransaction(xid);
 
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-        addResourceManagerUsed(id,CUSTOMER_RM);
+        forwardTraxToRM(id,CUSTOMER_RM);
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
         {
@@ -531,7 +532,7 @@ public class Middleware extends ResourceManager {
                     return false;
                 }
                 lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,FLIGHT_RM);
+                forwardTraxToRM(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -542,7 +543,7 @@ public class Middleware extends ResourceManager {
                 }
             }
             lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,CAR_RM);
+            forwardTraxToRM(id,CAR_RM);
             carPrice = carRM.itemsAvailable(xid, Car.getKey(location), 1);
 
             if (carPrice < 0) {
@@ -551,7 +552,7 @@ public class Middleware extends ResourceManager {
             }
 
             lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,ROOM_RM);
+            forwardTraxToRM(id,ROOM_RM);
             roomPrice = roomRM.itemsAvailable(xid, Room.getKey(location), 1);
 
             if (roomPrice < 0) {
@@ -563,7 +564,7 @@ public class Middleware extends ResourceManager {
             roomRM.reserveRoom(xid, customerID, location);
 
             lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,CUSTOMER_RM);
+            forwardTraxToRM(id,CUSTOMER_RM);
             customer.reserve(Room.getKey(location), location, roomPrice);
 
             writeData(xid, customer.getKey(), customer);
@@ -590,7 +591,7 @@ public class Middleware extends ResourceManager {
                     return false;
                 }
                 lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,FLIGHT_RM);
+                forwardTraxToRM(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -601,7 +602,7 @@ public class Middleware extends ResourceManager {
                 }
             }
             lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,CAR_RM);
+            forwardTraxToRM(id,CAR_RM);
             carPrice = carRM.itemsAvailable(xid, Car.getKey(location), 1);
 
             if (carPrice < 0) {
@@ -612,7 +613,7 @@ public class Middleware extends ResourceManager {
             carRM.reserveCar(xid, customerID, location);
 
             lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,CUSTOMER_RM);
+            forwardTraxToRM(id,CUSTOMER_RM);
             customer.reserve(Car.getKey(location), location, carPrice);
             writeData(xid, customer.getKey(), customer);
 
@@ -629,7 +630,7 @@ public class Middleware extends ResourceManager {
                     return false;
                 }
                 lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,FLIGHT_RM);
+                forwardTraxToRM(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -640,7 +641,7 @@ public class Middleware extends ResourceManager {
                 }
             }
             lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(id,ROOM_RM);
+            forwardTraxToRM(id,ROOM_RM);
             roomPrice = roomRM.itemsAvailable(xid, Room.getKey(location), 1);
 
             if (roomPrice < 0) {
@@ -651,7 +652,7 @@ public class Middleware extends ResourceManager {
             roomRM.reserveRoom(xid, customerID, location);
 
             lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,CUSTOMER_RM);
+            forwardTraxToRM(id,CUSTOMER_RM);
             customer.reserve(Room.getKey(location), location, roomPrice);
             writeData(xid, customer.getKey(), customer);
 
@@ -668,7 +669,7 @@ public class Middleware extends ResourceManager {
                     return false;
                 }
                 lockData(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                addResourceManagerUsed(id,FLIGHT_RM);
+                forwardTraxToRM(id,FLIGHT_RM);
                 int price = flightRM.itemsAvailable(xid, Flight.getKey(keyInt), countraxManagerap.get(key));
 
                 if (price < 0) {
@@ -682,7 +683,7 @@ public class Middleware extends ResourceManager {
 
         if (flightPrice.keySet().size() > 0) {
             lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            addResourceManagerUsed(id,CUSTOMER_RM);
+            forwardTraxToRM(id,CUSTOMER_RM);
         }
         // Reserve flights
         for (Integer key : flightPrice.keySet()) {
@@ -720,7 +721,7 @@ public class Middleware extends ResourceManager {
             if (!type.equals(CUSTOMER_RM))
                 continue;
             lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
-            addResourceManagerUsed(xid,CUSTOMER_RM);
+            forwardTraxToRM(xid,CUSTOMER_RM);
             Customer customer = (Customer)readData(xid, key);
             if (customer != null)
                 summary += customer.getSummary();
@@ -815,7 +816,7 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public void addResourceManagerUsed(int xid, String resource) throws RemoteException  {
+    public void forwardTraxToRM(int xid, String resource) throws RemoteException  {
         Transaction t = traxManager.getActiveTransaction(xid);
         t.setRelatedRM(resource);
 

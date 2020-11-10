@@ -80,11 +80,10 @@ public class Transaction {
         synchronized(tmpData) {
             tmpData.put(key, value);
         }
-//        System.out.println("tmpData: " + tmpData.toString());
     }
 
     // Remove the item out of storage
-    protected void removeCopyData(int xid, String key)
+    public void removeCopyData(int xid, String key)
     {
         synchronized(tmpData) {
             tmpData.remove(key);
