@@ -188,44 +188,45 @@ public class Middleware extends ResourceManager {
 
         if (relatedRM[0]){
             synchronized (flightRM.m_data){
-                Set<String> keyset = m.keySet();
-                for (String key : keyset) {
+                Transaction flightTrans = flightRM.tm.getActiveTransaction(xid);
+                for (String key : flightTrans.get_TMPdata().keySet()) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     flightRM.m_data.put(key, m.get(key));
                 }
+                flightRM.tm.removeActiveTransaction(xid);
             }
         }
         if (relatedRM[1]){
             synchronized (roomRM.m_data) {
-                Set<String> keyset = m.keySet();
-                for (String key : keyset) {
+                Transaction roomTrans = flightRM.tm.getActiveTransaction(xid);
+                for (String key : roomTrans.get_TMPdata().keySet()) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     roomRM.m_data.put(key, m.get(key));
                 }
+                roomRM.tm.removeActiveTransaction(xid);
             }
         }
         if (relatedRM[2]){
             synchronized (carRM.m_data) {
-                Set<String> keyset = m.keySet();
-                for (String key : keyset) {
+                Transaction carTrans = flightRM.tm.getActiveTransaction(xid);
+                for (String key : carTrans.get_TMPdata().keySet()) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     carRM.m_data.put(key, m.get(key));
                 }
+                carRM.tm.removeActiveTransaction(xid);
             }
         }
-
         //if it is customer, we need all resources managers to work
         if (relatedRM[0] && relatedRM[1] && relatedRM[2]) {
             synchronized (m_data) {
-                Set<String> keyset = m.keySet();
-                for (String key : keyset) {
+                for (String key : m.keySet()) {
                     System.out.println("Write:(" + key + "," + m.get(key) + ")");
                     m_data.put(key, m.get(key));
                 }
+                traxManager.removeActiveTransaction(xid);
             }
         }
 
-        traxManager.removeActiveTransaction(xid);
         lockManager.UnlockAll(xid);
         return true;
     }
