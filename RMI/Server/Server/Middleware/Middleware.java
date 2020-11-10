@@ -185,7 +185,6 @@ public class Middleware extends ResourceManager {
         return flightRM.queryFlight(xid, flightNumber);
     }
 
-
     public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
         Trace.info("Middleware: queryCars");
         Transaction trx = traxManager.getActiveTransaction(xid);
@@ -254,8 +253,8 @@ public class Middleware extends ResourceManager {
 
         writeData(xid, customer.getKey(), customer);
         flightRM.newCustomer(xid, cid);
-        flightRM.newCustomer(xid, cid);
-        flightRM.newCustomer(xid, cid);
+        roomRM.newCustomer(xid, cid);
+        carRM.newCustomer(xid, cid);
 
         Trace.info("Middleware: newCustomer(" + xid + ") returns ID=" + cid);
         return cid;
@@ -278,8 +277,8 @@ public class Middleware extends ResourceManager {
             customer = new Customer(customerID);
             writeData(xid, customer.getKey(), customer);
             flightRM.newCustomer(xid, customerID);
-            flightRM.newCustomer(xid, customerID);
-            flightRM.newCustomer(xid, customerID);
+            carRM.newCustomer(xid, customerID);
+            roomRM.newCustomer(xid, customerID);
             Trace.info("Middleware:newCustomer(" + xid + ", " + customerID + ") created");
             return true;
         }
