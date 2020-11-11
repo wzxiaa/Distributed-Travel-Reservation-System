@@ -23,7 +23,7 @@ public class Middleware extends ResourceManager {
     public static final String FLIGHT_RM = "Flight";
     public static final String ROOM_RM = "Room";
     public static final String CAR_RM = "Car";
-    public static final String CUSTOMER_RM = "Customer";
+    public static final String CUSTOMER_RM = "customer";
 
     // protected static ServerConfig s_flightServer;
     // protected static ServerConfig s_carServer;
@@ -618,30 +618,67 @@ public class Middleware extends ResourceManager {
         return true;
     }
 
+    // public String queryCustomerInfo(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+
+    //     if(!traxManager.isActive(xid))
+    //         throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
+    //     Trace.info("Middleware: querCustomer");
+    //     Transaction trx = traxManager.getActiveTransaction(xid);
+    //     trx.resetTimer();
+    //     lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+    //     forwardTraxToRM(xid,CUSTOMER_RM);
+    //     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
+    //     if(customer == null){
+    //         Trace.info("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
+    //         return "customer(" + xid + ", " + customerID + ") doesn't exist\n";
+    //     }
+    //     return flightRM.queryCustomerInfo(xid,customerID) + carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1] + roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1];
+    // }
 
     public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        Trace.info("Middleware: Summary");
-        Transaction t = traxManager.getActiveTransaction(xid);
-        t.resetTimer();
 
+        Trace.info("Middleware: Summary");
+        if(!traxManager.isActive(xid))
+            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
+        Transaction t = traxManager.getActiveTransaction(xid);
         RMHashMap m = t.get_TMPdata();
+        t.resetTimer();
+        String s = "";
         Set<String> keyset = new HashSet<String>(m.keySet());
         keyset.addAll(m_data.keySet());
-
-        String summary = "";
-
+        Customer customer;
+        System.out.println("size"+keyset.size());
         for (String key: keyset) {
-            String type = key.split("-")[0];
-            if (!type.equals(CUSTOMER_RM))
+            String rmType = key.split("-")[0];
+            int customerID = Integer. parseInt(key.split("-")[1]);
+            System.out.println("rmType"+key.toString());
+            if (!rmType.equals(CUSTOMER_RM)){
+                System.out.println("skopped ");
                 continue;
+            }
+                 
             lockData(xid, key, TransactionLockObject.LockType.LOCK_READ);
             forwardTraxToRM(xid,CUSTOMER_RM);
-            Customer customer = (Customer)readData(xid, key);
-            if (customer != null)
-                summary += customer.getSummary();
+            customer = (Customer)readData(xid, key);
+            
+            if (customer != null){
+                s = s.concat("Customer: "+customerID+"\n");
+                s= s.concat(flightRM.queryCustomerInfo(xid,customerID)).concat(carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]).concat(roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]);
+                s = s+ customer.getSummary();
+               // System.out.println("s"+s);
+            }else{
+                // System.out.println("c is null");
+                // Trace.info("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
+                // return "customer(" + xid + ", " + customerID + ") doesn't exist\n";
+            }
+            
+        
         }
-        return summary;
+       // System.out.println("s"+s);
+        return s;
+                                                                                     
+
     }
 
     public String getName() throws RemoteException {

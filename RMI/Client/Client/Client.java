@@ -426,7 +426,7 @@ public abstract class Client
 				int xid = toInt(arguments.elementAt(1));
 
 				String summary = m_resourceManager.Summary(xid);
-				System.out.print(summary);
+				System.out.print("s:"+summary);
 
 				break;
 			}

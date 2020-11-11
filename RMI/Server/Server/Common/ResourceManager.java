@@ -378,6 +378,21 @@ public class ResourceManager implements IResourceManager
 		}
 	}
 
+	public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException{
+		String summary = "";
+
+		for (String key: m_data.keySet()) {
+			String type = key.split("-")[0];
+			System.out.println("type in rm"+type);
+			if (!type.equals("customer"))
+				continue;
+			Customer customer = (Customer)readData(xid, key);
+			summary += customer.getSummary();
+
+		}
+		return summary;
+	}
+
 	public int newCustomer(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		Trace.info("RM::newCustomer(" + xid + ") called");
@@ -456,19 +471,7 @@ public class ResourceManager implements IResourceManager
 		return false;
 	}
 
-	public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException{
-		String summary = "";
-
-		for (String key: m_data.keySet()) {
-			String type = key.split("-")[0];
-			if (!type.equals("customer"))
-				continue;
-			Customer customer = (Customer)readData(xid, key);
-			summary += customer.getSummary();
-
-		}
-		return summary;
-	}
+	
 
 	public int start() throws RemoteException{
 		return 0;
