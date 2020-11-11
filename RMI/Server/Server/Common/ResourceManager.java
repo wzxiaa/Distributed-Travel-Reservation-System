@@ -196,7 +196,7 @@ public class ResourceManager implements IResourceManager
 		}
 	}
 
-	public int itemsAvailable(int xid, String key, int quantity) throws InvalidTransactionException {
+	public int countAvailaleItems(int xid, String key, int quantity) throws InvalidTransactionException {
 		// Check if the item is available
 		ReservableItem item = (ReservableItem)readData(xid, key);
 		if (item == null)
@@ -210,8 +210,21 @@ public class ResourceManager implements IResourceManager
 			return -1;
 		}
 
-		return item.getPrice();
+		return item.getCount();
 	}
+
+	public int getPrice(int xid, String key) throws InvalidTransactionException {
+		// Check if the item is available
+		ReservableItem item = (ReservableItem)readData(xid, key);
+		if (item == null)
+		{
+			Trace.warn("RM::reserveItem(" + xid + ", " + key + ") failed--item doesn't exist");
+			return -1;
+		} else {
+			return item.getPrice();
+		}
+	}
+
 
 
 	// Create a new flight, or add seats to existing flight

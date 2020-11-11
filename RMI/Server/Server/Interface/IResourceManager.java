@@ -249,7 +249,7 @@ public interface IResourceManager extends Remote
      *
      * @return price of the item
      */
-    public int itemsAvailable(int xid, String key, int quantity)
+    public int countAvailaleItems(int xid, String key, int quantity)
             throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
@@ -259,6 +259,15 @@ public interface IResourceManager extends Remote
      */
     public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room)
 	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+
+    /**
+     * Get item price
+     *
+     * @return Success
+     */
+    public int getPrice(int xid, String key)
+            throws RemoteException, InvalidTransactionException;
+
 
     /**
      *
