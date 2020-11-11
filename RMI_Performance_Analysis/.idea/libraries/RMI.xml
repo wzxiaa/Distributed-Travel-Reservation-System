@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="RMI">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/out/production/RMI/RMHashMap.jar!/" />
+      <root url="jar://$PROJECT_DIR$/out/production/RMI/RMItem.jar!/" />
+      <root url="jar://$PROJECT_DIR$/out/production/RMI/RMIInterface.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
