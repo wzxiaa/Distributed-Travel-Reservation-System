@@ -58,9 +58,14 @@ public interface IResourceManager extends Remote
 
     public void addNewTrax(int xid) throws RemoteException;
 
-    public int start() throws RemoteException;
+//    public int start() throws RemoteException;
+//
+//    public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException;
 
-    public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException;
+    public long[] start() throws RemoteException;
+
+    public long[] commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException;
+
 
     public void abort(int xid) throws RemoteException, InvalidTransactionException;
 
@@ -74,8 +79,10 @@ public interface IResourceManager extends Remote
      *
      * @return Success
      */
-    public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//    public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] addFlight(int id, int flightNum, int flightSeats, int flightPrice)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
     
     /**
      * Add car at a location.
@@ -85,8 +92,10 @@ public interface IResourceManager extends Remote
      *
      * @return Success
      */
-    public boolean addCars(int id, String location, int numCars, int price) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//    public boolean addCars(int id, String location, int numCars, int price)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] addCars(int id, String location, int numCars, int price)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
    
     /**
      * Add room at a location.
@@ -96,8 +105,11 @@ public interface IResourceManager extends Remote
      *
      * @return Success
      */
-    public boolean addRooms(int id, String location, int numRooms, int price) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//    public boolean addRooms(int id, String location, int numRooms, int price)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+
+    public long[] addRooms(int id, String location, int numRooms, int price)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 			    
     /**
      * Add customer.
@@ -160,7 +172,8 @@ public interface IResourceManager extends Remote
      * @return Success
      */
     public boolean removeReservation(int xid, int customerID, String reserveditemKey, int reserveditemCount)
-            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+            throws RemoteException,TransactionAbortedException
+            , InvalidTransactionException;
 
 
 
@@ -169,24 +182,29 @@ public interface IResourceManager extends Remote
      *
      * @return Number of empty seats
      */
-    public int queryFlight(int id, int flightNumber) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
-
+//    public int queryFlight(int id, int flightNumber)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] queryFlight(int id, int flightNumber)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
     /**
      * Query the status of a car location.
      *
      * @return Number of available cars at this location
      */
-    public int queryCars(int id, String location) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//    public int queryCars(int id, String location)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] queryCars(int id, String location)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
      * Query the status of a room location.
      *
      * @return Number of available rooms at this location
      */
-    public int queryRooms(int id, String location) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//    public int queryRooms(int id, String location)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] queryRooms(int id, String location)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
      * Query the customer reservations.
@@ -225,23 +243,29 @@ public interface IResourceManager extends Remote
      *
      * @return Success
      */
-    public boolean reserveFlight(int id, int customerID, int flightNumber) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//    public boolean reserveFlight(int id, int customerID, int flightNumber)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] reserveFlight(int id, int customerID, int flightNumber)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
      * Reserve a car at this location.
      *
      * @return Success
      */
-    public boolean reserveCar(int id, int customerID, String location) 
-	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+//    public boolean reserveCar(int id, int customerID, String location)
+//	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] reserveCar(int id, int customerID, String location)
+            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
         /**
      * Reserve a room at this location.
      *
      * @return Success
      */
-    public boolean reserveRoom(int id, int customerID, String location)
+//    public boolean reserveRoom(int id, int customerID, String location)
+//            throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public long[] reserveRoom(int id, int customerID, String location)
             throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**

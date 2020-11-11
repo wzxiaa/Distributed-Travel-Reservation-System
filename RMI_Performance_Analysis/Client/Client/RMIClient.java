@@ -13,7 +13,7 @@ import java.io.*;
 public class RMIClient extends Client
 {
 	private static String s_serverHost = "localhost";
-	private static int s_serverPort = 1099;
+	private static int s_serverPort = 12345;
 	private static String s_serverName = "Middleware";
 
 	private static String s_rmiPrefix = "group_24_";

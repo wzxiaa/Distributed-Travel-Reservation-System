@@ -25,6 +25,10 @@ public class ResourceManager implements IResourceManager
 		tm = new TransactionManager();
 	}
 
+	public long getCurrentTime() {
+		return System.nanoTime();
+	}
+
 	protected void setTransactionManager(TransactionManager tm) {
 		this.tm = tm;
 	}
@@ -130,17 +134,33 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Query the number of available seats/rooms/cars
-	protected int queryNum(int xid, String key) throws InvalidTransactionException
+//	protected int queryNum(int xid, String key) throws InvalidTransactionException
+//	{
+//		Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
+//		ReservableItem curObj = (ReservableItem)readData(xid, key);
+//		int value = 0;
+//		if (curObj != null)
+//		{
+//			value = curObj.getCount();
+//		}
+//		Trace.info("RM::queryNum(" + xid + ", " + key + ") returns count=" + value);
+//		return value;
+//	}
+
+
+	protected long[] queryNum(int xid, String key) throws InvalidTransactionException
 	{
 		Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
+		long timeDB1=getCurrentTime();
 		ReservableItem curObj = (ReservableItem)readData(xid, key);
+		timeDB1=getCurrentTime()-timeDB1;
 		int value = 0;
 		if (curObj != null)
 		{
 			value = curObj.getCount();
 		}
 		Trace.info("RM::queryNum(" + xid + ", " + key + ") returns count=" + value);
-		return value;
+		return new long [] {value, timeDB1};
 	}
 
 	// Query the price of an item
@@ -158,31 +178,74 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Reserve an item
-	protected boolean reserveItem(int xid, int customerID, String key, String location) throws InvalidTransactionException
+//	protected boolean reserveItem(int xid, int customerID, String key, String location) throws InvalidTransactionException
+//	{
+//		Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called" );
+//		// Read customer object if it exists (and read lock it)
+//		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+//		if (customer == null)
+//		{
+//			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ")  failed--customer doesn't exist");
+//			return false;
+//		}
+//
+//		// Check if the item is available
+//		ReservableItem item = (ReservableItem)readData(xid, key);
+//		if (item == null)
+//		{
+//			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--item doesn't exist");
+//			return false;
+//		}
+//		else if (item.getCount() == 0)
+//		{
+//			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--No more items");
+//			return false;
+//		}
+//		else
+//		{
+//			customer.reserve(key, location, item.getPrice());
+//			writeData(xid, customer.getKey(), customer);
+//
+//			// Decrease the number of available items in the storage
+//			item.setCount(item.getCount() - 1);
+//			item.setReserved(item.getReserved() + 1);
+//			writeData(xid, item.getKey(), item);
+//
+//			Trace.info("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
+//			return true;
+//		}
+//	}
+
+	protected long[] reserveItem(int xid, int customerID, String key, String location) throws InvalidTransactionException
 	{
 		Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called" );
+		long timeDB1=getCurrentTime();
 		// Read customer object if it exists (and read lock it)
 		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+		long time_1=getCurrentTime()-timeDB1;
 		if (customer == null)
 		{
 			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ")  failed--customer doesn't exist");
-			return false;
+			return new long[]{-100000000, -100000000};
 		}
 
 		// Check if the item is available
+		long timeDB2=getCurrentTime();
 		ReservableItem item = (ReservableItem)readData(xid, key);
+		long time_2=getCurrentTime()-timeDB2;
 		if (item == null)
 		{
 			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--item doesn't exist");
-			return false;
+			return new long[]{-100000000, -100000000};
 		}
 		else if (item.getCount() == 0)
 		{
 			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--No more items");
-			return false;
+			return new long[]{-100000000, -100000000};
 		}
 		else
 		{
+			long timeDB3=getCurrentTime();
 			customer.reserve(key, location, item.getPrice());
 			writeData(xid, customer.getKey(), customer);
 
@@ -190,11 +253,15 @@ public class ResourceManager implements IResourceManager
 			item.setCount(item.getCount() - 1);
 			item.setReserved(item.getReserved() + 1);
 			writeData(xid, item.getKey(), item);
+			long time_3=getCurrentTime()-timeDB3;
 
 			Trace.info("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
-			return true;
+			return new long[] {getCurrentTime() - timeDB1, (time_1+time_2+time_3)};
 		}
 	}
+
+
+
 
 	public int countAvailaleItems(int xid, String key, int quantity) throws InvalidTransactionException {
 		// Check if the item is available
@@ -229,15 +296,46 @@ public class ResourceManager implements IResourceManager
 
 	// Create a new flight, or add seats to existing flight
 	// NOTE: if flightPrice <= 0 and the flight already exists, it maintains its current price
-	public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		Trace.info("RM::addFlight(" + xid + ", " + flightNum + ", " + flightSeats + ", $" + flightPrice + ") called");
+//		Flight curObj = (Flight)readData(xid, Flight.getKey(flightNum));
+//		if (curObj == null)
+//		{
+//			// Doesn't exist yet, add it
+//			Flight newObj = new Flight(flightNum, flightSeats, flightPrice);
+//			writeData(xid, newObj.getKey(), newObj);
+//			Trace.info("RM::addFlight(" + xid + ") created new flight " + flightNum + ", seats=" + flightSeats + ", price=$" + flightPrice);
+//		}
+//		else
+//		{
+//			// Add seats to existing flight and update the price if greater than zero
+//			curObj.setCount(curObj.getCount() + flightSeats);
+//			if (flightPrice > 0)
+//			{
+//				curObj.setPrice(flightPrice);
+//			}
+//			writeData(xid, curObj.getKey(), curObj);
+//			Trace.info("RM::addFlight(" + xid + ") modified existing flight " + flightNum + ", seats=" + curObj.getCount() + ", price=$" + flightPrice);
+//		}
+//		return true;
+//	}
+
+	public long[] addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		Trace.info("RM::addFlight(" + xid + ", " + flightNum + ", " + flightSeats + ", $" + flightPrice + ") called");
+		long time=getCurrentTime();
+		long timeDB1=getCurrentTime();
 		Flight curObj = (Flight)readData(xid, Flight.getKey(flightNum));
+		timeDB1=getCurrentTime()-timeDB1;
+		long timeDB2;
 		if (curObj == null)
 		{
 			// Doesn't exist yet, add it
 			Flight newObj = new Flight(flightNum, flightSeats, flightPrice);
+			timeDB2=getCurrentTime();
 			writeData(xid, newObj.getKey(), newObj);
+			timeDB2=getCurrentTime()-timeDB2;
 			Trace.info("RM::addFlight(" + xid + ") created new flight " + flightNum + ", seats=" + flightSeats + ", price=$" + flightPrice);
 		}
 		else
@@ -248,23 +346,57 @@ public class ResourceManager implements IResourceManager
 			{
 				curObj.setPrice(flightPrice);
 			}
+			timeDB2=getCurrentTime();
 			writeData(xid, curObj.getKey(), curObj);
+			timeDB2=getCurrentTime()-timeDB2;
 			Trace.info("RM::addFlight(" + xid + ") modified existing flight " + flightNum + ", seats=" + curObj.getCount() + ", price=$" + flightPrice);
 		}
-		return true;
+		long timeDB=timeDB1+timeDB2;
+		return new long[] {getCurrentTime()-time,timeDB };
 	}
 
 	// Create a new car location or add cars to an existing location
 	// NOTE: if price <= 0 and the location already exists, it maintains its current price
-	public boolean addCars(int xid, String location, int count, int price) throws RemoteException,TransactionAbortedException,InvalidTransactionException
+//	public boolean addCars(int xid, String location, int count, int price) throws RemoteException,TransactionAbortedException,InvalidTransactionException
+//	{
+//		Trace.info("RM::addCars(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
+//		Car curObj = (Car)readData(xid, Car.getKey(location));
+//		if (curObj == null)
+//		{
+//			// Car location doesn't exist yet, add it
+//			Car newObj = new Car(location, count, price);
+//			writeData(xid, newObj.getKey(), newObj);
+//			Trace.info("RM::addCars(" + xid + ") created new location " + location + ", count=" + count + ", price=$" + price);
+//		}
+//		else
+//		{
+//			// Add count to existing car location and update price if greater than zero
+//			curObj.setCount(curObj.getCount() + count);
+//			if (price > 0)
+//			{
+//				curObj.setPrice(price);
+//			}
+//			writeData(xid, curObj.getKey(), curObj);
+//			Trace.info("RM::addCars(" + xid + ") modified existing location " + location + ", count=" + curObj.getCount() + ", price=$" + price);
+//		}
+//		return true;
+//	}
+
+
+	public long[] addCars(int xid, String location, int count, int price) throws RemoteException,TransactionAbortedException,InvalidTransactionException
 	{
 		Trace.info("RM::addCars(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
+		long time=getCurrentTime();
 		Car curObj = (Car)readData(xid, Car.getKey(location));
+		long timeDB1=getCurrentTime()-time;
+		long timeDB2;
 		if (curObj == null)
 		{
 			// Car location doesn't exist yet, add it
 			Car newObj = new Car(location, count, price);
+			timeDB2=getCurrentTime();
 			writeData(xid, newObj.getKey(), newObj);
+			timeDB2=getCurrentTime()-timeDB2;
 			Trace.info("RM::addCars(" + xid + ") created new location " + location + ", count=" + count + ", price=$" + price);
 		}
 		else
@@ -275,23 +407,55 @@ public class ResourceManager implements IResourceManager
 			{
 				curObj.setPrice(price);
 			}
+			timeDB2=getCurrentTime();
 			writeData(xid, curObj.getKey(), curObj);
+			timeDB2=getCurrentTime()-timeDB2;
 			Trace.info("RM::addCars(" + xid + ") modified existing location " + location + ", count=" + curObj.getCount() + ", price=$" + price);
 		}
-		return true;
+		long timeDB=timeDB1+timeDB2;
+		return new long[] {getCurrentTime()-time, timeDB};
 	}
 
 	// Create a new room location or add rooms to an existing location
 	// NOTE: if price <= 0 and the room location already exists, it maintains its current price
-	public boolean addRooms(int xid, String location, int count, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public boolean addRooms(int xid, String location, int count, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		Trace.info("RM::addRooms(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
+//		Room curObj = (Room)readData(xid, Room.getKey(location));
+//		if (curObj == null)
+//		{
+//			// Room location doesn't exist yet, add it
+//			Room newObj = new Room(location, count, price);
+//			writeData(xid, newObj.getKey(), newObj);
+//			Trace.info("RM::addRooms(" + xid + ") created new room location " + location + ", count=" + count + ", price=$" + price);
+//		} else {
+//			// Add count to existing object and update price if greater than zero
+//			curObj.setCount(curObj.getCount() + count);
+//			if (price > 0)
+//			{
+//				curObj.setPrice(price);
+//			}
+//			writeData(xid, curObj.getKey(), curObj);
+//			Trace.info("RM::addRooms(" + xid + ") modified existing location " + location + ", count=" + curObj.getCount() + ", price=$" + price);
+//		}
+//		return true;
+//	}
+
+	public long[] addRooms(int xid, String location, int count, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		Trace.info("RM::addRooms(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
+		long time=getCurrentTime();
+		long timeDB1=getCurrentTime();
 		Room curObj = (Room)readData(xid, Room.getKey(location));
+		timeDB1=getCurrentTime()-timeDB1;
+		long timeDB2;
 		if (curObj == null)
 		{
 			// Room location doesn't exist yet, add it
 			Room newObj = new Room(location, count, price);
+			timeDB2=getCurrentTime();
 			writeData(xid, newObj.getKey(), newObj);
+			timeDB2=getCurrentTime()-timeDB2;
 			Trace.info("RM::addRooms(" + xid + ") created new room location " + location + ", count=" + count + ", price=$" + price);
 		} else {
 			// Add count to existing object and update price if greater than zero
@@ -300,10 +464,14 @@ public class ResourceManager implements IResourceManager
 			{
 				curObj.setPrice(price);
 			}
+			timeDB2=getCurrentTime();
 			writeData(xid, curObj.getKey(), curObj);
+			timeDB2=getCurrentTime()-timeDB2;
 			Trace.info("RM::addRooms(" + xid + ") modified existing location " + location + ", count=" + curObj.getCount() + ", price=$" + price);
 		}
-		return true;
+		long timeDB=timeDB1+timeDB2;
+		//return RMtime, DBtime
+		return new long[] {getCurrentTime()-time, timeDB};
 	}
 
 	// Deletes flight
@@ -325,21 +493,42 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Returns the number of empty seats in this flight
-	public int queryFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public int queryFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		return queryNum(xid, Flight.getKey(flightNum));
+//	}
+
+	public long[] queryFlight (int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return queryNum(xid, Flight.getKey(flightNum));
+		long time0=getCurrentTime();
+		long result[]=queryNum(xid, Flight.getKey(flightNum));
+		//return RMtime, DBtime, actual reusult
+		return new long[] {getCurrentTime() - time0, result[1], result[0]};
 	}
 
 	// Returns the number of cars available at a location
-	public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		return queryNum(xid, Car.getKey(location));
+//	}
+
+	public long[] queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return queryNum(xid, Car.getKey(location));
+		long time0=getCurrentTime();
+		long result[]=queryNum(xid, Car.getKey(location));
+		return new long[] {getCurrentTime() - time0, result[1], result[0]};
 	}
 
 	// Returns the amount of rooms available at a location
-	public int queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public int queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		return queryNum(xid, Room.getKey(location));
+//	}
+	public long[] queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return queryNum(xid, Room.getKey(location));
+		long time0=getCurrentTime();
+		long result[]=queryNum(xid, Room.getKey(location));
+		return new long[] {getCurrentTime() - time0,  result[1], result[0]};
 	}
 
 	// Returns price of a seat in this flight
@@ -448,19 +637,34 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Adds flight reservation to this customer
-	public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		return reserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
+//	}
+
+	public long[] reserveFlight(int xid, int customerID, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		return reserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
 	}
 
 	// Adds car reservation to this customer
-	public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		return reserveItem(xid, customerID, Car.getKey(location), location);
+//	}
+
+	public long[] reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		return reserveItem(xid, customerID, Car.getKey(location), location);
 	}
 
 	// Adds room reservation to this customer
-	public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+//	{
+//		return reserveItem(xid, customerID, Room.getKey(location), location);
+//	}
+
+	public long[] reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		return reserveItem(xid, customerID, Room.getKey(location), location);
 	}
@@ -473,12 +677,20 @@ public class ResourceManager implements IResourceManager
 
 	
 
-	public int start() throws RemoteException{
-		return 0;
+//	public  start() throws RemoteException{
+//		return 0;
+//	}
+
+	public long[] start() throws RemoteException{
+		return new long [] {0};
 	}
 
-	public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
-		return false;
+//	public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
+//		return false;
+//	}
+
+	public long[] commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
+		return new long [] {0};
 	}
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {
