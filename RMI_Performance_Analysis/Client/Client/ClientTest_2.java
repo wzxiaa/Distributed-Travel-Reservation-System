@@ -69,22 +69,24 @@ public class ClientTest_2 extends Client implements Runnable
 
             for(int i=0; i<testRes.size(); i++) {
                 total_res += testRes.get(i)[0];
-                total_mdw += testRes.get(i)[1];
+                /*total_mdw += testRes.get(i)[1];
                 total_rm += testRes.get(i)[2];
-                total_db += testRes.get(i)[3];
+                total_db += testRes.get(i)[3];*/
             }
 
-            System.out.println(" response time : " + total_res);
+            /*System.out.println(" response time : " + total_res);
             System.out.println(" mdw time : " + total_mdw);
             System.out.println(" rm time : " + total_rm);
             System.out.println(" db time : " + total_db);
             System.out.println("throughput : " + desired_thput);
-
+*/
             System.out.println("average response time : " + total_res/testRes.size());
-            System.out.println("average mdw time : " + total_mdw/testRes.size());
+  /*          System.out.println("average mdw time : " + total_mdw/testRes.size());
             System.out.println("average rm time : " + total_rm/testRes.size());
             System.out.println("average db time : " + total_db/testRes.size());
             System.out.println("throughput : " + desired_thput);
+*/
+
         }
         catch (Exception e) {
             System.err.println((char)27 + "[31;1mClient exception: " + (char)27 + "[0mUncaught exception");
@@ -95,7 +97,7 @@ public class ClientTest_2 extends Client implements Runnable
 
     @Override
     public void run(){
-        int timeInterval = num_clients * 1000 / desired_thput;
+        int timeInterval = num_clients * 1000000000 / desired_thput;
         while(this.timer + 3000 < (new Date()).getTime()) {
         }
         boolean plus = true;
@@ -104,7 +106,7 @@ public class ClientTest_2 extends Client implements Runnable
             else timeInterval -= x;
             plus = !plus;
             try{
-                long[] res = runE1SingleRM();
+                long[] res = runE1SingleRM(i);
                 System.out.println("sleep time : " + (timeInterval-res[0]));
                 System.out.println();
                 testRes.add(res);
@@ -118,8 +120,8 @@ public class ClientTest_2 extends Client implements Runnable
         }
     }
 
-    public long[] runE1SingleRM() throws Exception {
-        long startTime = System.currentTimeMillis();
+    public long[] runE1SingleRM(int index) throws Exception {
+        //long startTime = System.currentTimeMillis();
         // int xid = m_resourceManager.start();
         ArrayList<long[]> total = new ArrayList<>();
 
@@ -129,43 +131,72 @@ public class ClientTest_2 extends Client implements Runnable
             return new long[]{-1, -1, -1};
         } else {
             total.add(start);
-            total.add(m_resourceManager.addCars((int)start[0], "Montreal", 1000, 1000));
-            total.add(m_resourceManager.queryCars((int)start[0], "Montreal"));
-            total.add(m_resourceManager.addCars((int)start[0], "Toronto", 1000, 1000));
-            total.add(m_resourceManager.queryCars((int)start[0], "Toronto"));
-            total.add(m_resourceManager.addCars((int)start[0], "Vancouver", 1000, 1000));
-            total.add(m_resourceManager.queryCars((int)start[0], "Vancouver"));
-//            total.add(m_resourceManager.addCars((int)start[0], "Ottawa", 1000, 1000));
-//            total.add(m_resourceManager.queryCars((int)start[0], "Ottawa"));
-//            total.add(m_resourceManager.addCars((int)start[0], "Waterloo", 1000, 1000));
-//            total.add(m_resourceManager.queryCars((int)start[0], "Waterloo"));
-            total.add(m_resourceManager.commit((int)start[0]));
+            long addcartime = System.currentTimeMillis();
+            try {
+                total.add(m_resourceManager.addCars((int) start[0], "Montreal" + index, 1000 + index, 1000 + index));
+            } catch (TransactionAbortedException e){
+                System.out.println("Test 2: add cars failed due to aborted transaction");
+            }
+            addcartime = System.currentTimeMillis() - addcartime;
 
-            long endTime = System.currentTimeMillis();
-            long totalResponseTime = endTime - startTime;
+            long querycartime = System.currentTimeMillis();
+            try {
+                total.add(m_resourceManager.queryCars((int)start[0], "Montreal"+index));
+            catch (TransactionAbortedException e){
+                System.out.println("Test 2: query cars failed due to aborted transaction");
+            }
+            querycartime = System.currentTimeMillis() - querycartime;
+            //total.add(m_resourceManager.addCars(xid, "Toronto", 1000, 1000));
+            //total.add(m_resourceManager.queryCars(xid, "Toronto"));
+            //total.add(m_resourceManager.addCars(xid, "Vancouver", 1000, 1000));
+            //total.add(m_resourceManager.queryCars(xid, "Vancouver"));
+            //total.add(m_resourceManager.addCars(xid, "Ottawa", 1000, 1000));
+            //total.add(m_resourceManager.queryCars(xid, "Ottawa"));
+            //total.add(m_resourceManager.addCars(xid, "Waterloo", 1000, 1000));
+            //total.add(m_resourceManager.queryCars(xid, "Waterloo"));
+            //total.add(m_resourceManager.commit(xid));
+
+           // long endTime = System.currentTimeMillis();
+            /*long totalResponseTime = endTime - startTime;
             long MDWTime = 0;
             long totalRMDBTime = 0;
             long totalRMTime = 0;
             long totalDBTime = 0;
 
-            for (int i = 0; i < total.size()-1; i++) {
-//                System.out.println(i);
-//                System.out.println(total.get(i)[0]);
+
+            for (int i = 0; i < total.size(); i++) {
+//                System.out.println("i: " + i);
+//                for(int j=0; j<total.get(i).length; j++) {
+//                    System.out.println(total.get(i)[j]);
+//                }
+
                 if(i!=0) MDWTime += total.get(i)[0];
-                totalRMDBTime += total.get(i)[1];
-                if(i!=0) totalDBTime += total.get(i)[2];
+                if(i==0) MDWTime += total.get(i)[1];
+
+                if(i!=0 && i!=(total.size()-1)) {
+                    totalRMDBTime += total.get(i)[1];
+                    totalDBTime += total.get(i)[2];
+                }
+
+                if(i==(total.size()-1)) {
+                    totalRMDBTime += total.get(i)[1];
+                    totalDBTime += total.get(i)[1];
+                }
             }
 
             totalRMTime = totalRMDBTime - totalDBTime;
-            System.out.println("xid: " + (int)start[0]);
+
             System.out.println("totalResponseTime : " + totalResponseTime);
             System.out.println("totalMDWTime : " + MDWTime);
             System.out.println("totalRMDBTime : " + totalRMDBTime);
             System.out.println("totalRMTime : " + totalRMTime);
             System.out.println("totalDBTime : " + totalDBTime);
-
+	    */
 //            System.out.println("totalCommunicationTime : " + totalCommunicationTime);
-            return new long[]{totalResponseTime, MDWTime, totalRMTime, totalDBTime};
+//
+            long totalResponseTime = addcartime+querycartime;
+            System.out.println("totalResponseTime : " + totalResponseTime);
+            return new long[]{totalResponseTime}; //, MDWTime, totalRMTime, totalDBTime};
         }
     }
 
@@ -257,4 +288,3 @@ public class ClientTest_2 extends Client implements Runnable
         }
     }
 }
-
