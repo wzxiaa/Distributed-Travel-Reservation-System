@@ -17,8 +17,8 @@ public class ClientTest_2 extends Client implements Runnable
     private static String s_serverName = "Middleware";
     private static String s_rmiPrefix = "group_24_";
 
-    private static int num_clients = 5;
-    private static int desired_thput = 1;
+    private static int num_clients = 6;
+    private static int desired_thput = 50;
     private long timer = 0;
     private int x = 10;
     private static List<long[]> testRes = new ArrayList<>();
@@ -54,6 +54,7 @@ public class ClientTest_2 extends Client implements Runnable
                 clientTests[i]= new ClientTest_2();
                 clientTests[i].connectServer();
                 clientTests[i].setTimer();
+		if(i==0) clientTests[i].addMultipleFlights(100);
                 clientThreads[i] = new Thread(clientTests[i]);
                 clientThreads[i].start();
             }
@@ -97,20 +98,24 @@ public class ClientTest_2 extends Client implements Runnable
 
     @Override
     public void run(){
-        int timeInterval = num_clients * 1000000000 / desired_thput;
+        int timeInterval = num_clients * 1000 / desired_thput;
         while(this.timer + 3000 < (new Date()).getTime()) {
         }
         boolean plus = true;
+	//for (int i = (int)Thread.currentThread().getId()*200; i < (int)Thread.currentThread().getId()*200 + 150; i++) {
         for(int i=0; i<50; i++){
             if(plus) timeInterval += x;
             else timeInterval -= x;
             plus = !plus;
             try{
-                long[] res = runE1SingleRM(i);
+		int index = i+1; //> 50 ? i-50 : i;
+                long[] res = runE1SingleRM(index);
                 System.out.println("sleep time : " + (timeInterval-res[0]));
                 System.out.println();
-                testRes.add(res);
-                if(timeInterval - res[0] < 0) continue;
+		//if (i >= (int)Thread.currentThread().getId()*200 + 100)
+		//if(i >= 100)
+                    testRes.add(res);
+                if((int)(timeInterval - res[0]) < 0) continue;
                 else {
                     Thread.sleep(timeInterval-res[0]);
                 }
@@ -120,33 +125,64 @@ public class ClientTest_2 extends Client implements Runnable
         }
     }
 
+    public void addMultipleFlights(int num) throws Exception {
+	try{
+	   System.out.println("Test 2: adding cars...");
+	   long[] st = m_resourceManager.start();    
+	   int xid = (int) st[0];
+	   for(int i=1; i<=num; i++){
+	      m_resourceManager.addFlight(xid, i, 10000, 10+i);
+	   }
+	   for(int i=1; i<=num; i++){
+	      m_resourceManager.newCustomer(xid, i); 
+	   }
+	    m_resourceManager.commit(xid);
+        } catch(Exception e){
+            System.out.println(e.toString());
+            System.exit(-1);
+        }
+        System.out.println("END SETUP");
+	
+    }
+
     public long[] runE1SingleRM(int index) throws Exception {
         //long startTime = System.currentTimeMillis();
         // int xid = m_resourceManager.start();
         ArrayList<long[]> total = new ArrayList<>();
-
+	long startTime =  System.currentTimeMillis();
+	int xid = -1;
+	synchronized(m_resourceManager){
+        startTime =  System.currentTimeMillis();
         long[] start = m_resourceManager.start();
-        if(start[0] == -1.0) {
+	startTime = System.currentTimeMillis() - startTime;
+	xid = (int) start[0];
+	}
+        if(xid == -1.0) {
             System.out.println("Error starting! Aborted");
             return new long[]{-1, -1, -1};
         } else {
-            total.add(start);
+            //total.add(start);
             long addcartime = System.currentTimeMillis();
-            try {
-                total.add(m_resourceManager.addCars((int) start[0], "Montreal" + index, 1000 + index, 1000 + index));
-            } catch (TransactionAbortedException e){
-                System.out.println("Test 2: add cars failed due to aborted transaction");
-            }
-            addcartime = System.currentTimeMillis() - addcartime;
-
-            long querycartime = System.currentTimeMillis();
-            try {
-                total.add(m_resourceManager.queryCars((int)start[0], "Montreal"+index));
-            catch (TransactionAbortedException e){
-                System.out.println("Test 2: query cars failed due to aborted transaction");
-            }
-            querycartime = System.currentTimeMillis() - querycartime;
-            //total.add(m_resourceManager.addCars(xid, "Toronto", 1000, 1000));
+	    synchronized(m_resourceManager){
+		addcartime = System.currentTimeMillis();
+                m_resourceManager.queryFlight(xid, index);
+            	addcartime = System.currentTimeMillis() - addcartime;
+	    }
+	    long querycartime = System.currentTimeMillis();;
+	    synchronized(m_resourceManager){
+		    querycartime = System.currentTimeMillis();
+		    m_resourceManager.reserveFlight(xid, index, index);
+	   	    querycartime = System.currentTimeMillis() - querycartime;
+	    }
+	    
+	    long commitTime =  System.currentTimeMillis();
+	    synchronized(m_resourceManager){
+		commitTime =  System.currentTimeMillis();
+	    	m_resourceManager.commit(xid);
+	    	commitTime =  System.currentTimeMillis() - commitTime;
+	    }
+	    //total.add(m_resourceManager.
+	    //addCars(xid, "Toronto", 1000, 1000));
             //total.add(m_resourceManager.queryCars(xid, "Toronto"));
             //total.add(m_resourceManager.addCars(xid, "Vancouver", 1000, 1000));
             //total.add(m_resourceManager.queryCars(xid, "Vancouver"));
@@ -194,7 +230,7 @@ public class ClientTest_2 extends Client implements Runnable
 	    */
 //            System.out.println("totalCommunicationTime : " + totalCommunicationTime);
 //
-            long totalResponseTime = addcartime+querycartime;
+            long totalResponseTime = addcartime+querycartime+commitTime+startTime;
             System.out.println("totalResponseTime : " + totalResponseTime);
             return new long[]{totalResponseTime}; //, MDWTime, totalRMTime, totalDBTime};
         }
