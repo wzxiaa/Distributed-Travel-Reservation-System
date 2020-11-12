@@ -198,31 +198,25 @@ public class Middleware extends ResourceManager {
             }
         }
         if (relatedRM[0]){
-         //   synchronized (flightRM.m_data){
-                for (String key : flightRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + flightRM.getTraxData(xid).get(key) + ")");
-                    flightRM.putData(key, flightRM.getTraxData(xid).get(key));
-                }
-                flightRM.removeTrax(xid);
-          //  }
+            for (String key : flightRM.getTraxData(xid).keySet()) {
+                System.out.println("Write:(" + key + "," + flightRM.getTraxData(xid).get(key) + ")");
+                flightRM.putData(key, flightRM.getTraxData(xid).get(key));
+            }
+            flightRM.removeTrax(xid);
         }
         if (relatedRM[1]){
-            //synchronized (roomRM.m_data) {
-                for (String key : roomRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + roomRM.getTraxData(xid).get(key) + ")");
-                    roomRM.putData(key, roomRM.getTraxData(xid).get(key));
-                }
-                roomRM.removeTrax(xid);
-            //}
+            for (String key : roomRM.getTraxData(xid).keySet()) {
+                System.out.println("Write:(" + key + "," + roomRM.getTraxData(xid).get(key) + ")");
+                roomRM.putData(key, roomRM.getTraxData(xid).get(key));
+            }
+            roomRM.removeTrax(xid);
         }
         if (relatedRM[2]){
-            //synchronized (carRM.m_data) {
-                for (String key : carRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + carRM.getTraxData(xid).get(key) + ")");
-                    carRM.putData(key, carRM.getTraxData(xid).get(key));
-                }
-                carRM.removeTrax(xid);
-            //}
+            for (String key : carRM.getTraxData(xid).keySet()) {
+                System.out.println("Write:(" + key + "," + carRM.getTraxData(xid).get(key) + ")");
+                carRM.putData(key, carRM.getTraxData(xid).get(key));
+            }
+            carRM.removeTrax(xid);
         }
         traxManager.removeActiveTransaction(xid);
 
@@ -654,7 +648,7 @@ public class Middleware extends ResourceManager {
             int customerID = Integer. parseInt(key.split("-")[1]);
             System.out.println("rmType"+key.toString());
             if (!rmType.equals(CUSTOMER_RM)){
-                System.out.println("skopped ");
+                System.out.println("stopped ");
                 continue;
             }
                  
@@ -664,21 +658,11 @@ public class Middleware extends ResourceManager {
             
             if (customer != null){
                 s = s.concat("Customer: "+customerID+"\n");
-                s= s.concat(flightRM.queryCustomerInfo(xid,customerID)).concat(carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]).concat(roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]);
-                s = s+ customer.getSummary();
-               // System.out.println("s"+s);
-            }else{
-                // System.out.println("c is null");
-                // Trace.info("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
-                // return "customer(" + xid + ", " + customerID + ") doesn't exist\n";
+                s = s.concat(flightRM.queryCustomerInfo(xid,customerID)).concat(carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]).concat(roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]);
+                s = s + customer.getSummary();
             }
-            
-        
         }
-       // System.out.println("s"+s);
         return s;
-                                                                                     
-
     }
 
     public String getName() throws RemoteException {
@@ -738,22 +722,6 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    // protected void //checkTransaction(int xid) throws TransactionAbortedException, InvalidTransactionException{
-    //     if(traxManager.readActiveData(xid) != null) {
-    //         traxManager.readActiveData(xid).updateLastAction();
-    //         return;
-    //     }
-    //     Trace.info("Transaction is not active: throw error");
-
-    //     Boolean v = traxManager.readInactiveData(xid);
-    //     if (v == null)
-    //         throw new InvalidTransactionException(xid, "MW: The transaction doesn't exist");
-    //     else if (v.booleanValue() == true)
-    //         throw new InvalidTransactionException(xid, "MW: The transaction has already been committed");
-    //     else
-    //         throw new TransactionAbortedException(xid, "MW: The transaction has been aborted");
-    // }
-
     public void lockData(int xid, String data, TransactionLockObject.LockType lockType) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
         try {
             if (!lockManager.Lock(xid, data, lockType)) {
@@ -771,7 +739,6 @@ public class Middleware extends ResourceManager {
     public void forwardTraxToRM(int xid, String resource) throws RemoteException  {
         Transaction t = traxManager.getActiveTransaction(xid);
         t.setRelatedRM(resource);
-
         try {
             try {
                 switch (resource) {

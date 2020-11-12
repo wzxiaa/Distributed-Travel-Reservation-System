@@ -27,10 +27,6 @@ public class Middleware extends ResourceManager {
     public static final String CAR_RM = "Car";
     public static final String CUSTOMER_RM = "customer";
 
-    // protected static ServerConfig s_flightServer;
-    // protected static ServerConfig s_carServer;
-    // protected static ServerConfig s_roomServer;
-
     protected static String flightRM_serverName;
     protected static String carRM_serverName;
     protected static String roomRM_serverName;
@@ -113,10 +109,6 @@ public class Middleware extends ResourceManager {
     }
 
     public void connectServers() {
-        // connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-        // connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-        // connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-
         connectServer("Flight", flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
         connectServer("Car", carRM_serverHost, carRM_serverPort, carRM_serverName);
         connectServer("Room", roomRM_serverHost, roomRM_serverPort, roomRM_serverName);
@@ -160,12 +152,6 @@ public class Middleware extends ResourceManager {
         }
     }
 
-
-    //    public int start() throws RemoteException{
-//        int xid  = traxManager.start();
-//        Trace.info("Start transaction " + xid);
-//        return xid;
-//    }
     public long[] start() throws RemoteException {
         long time = getCurrentTime();
         int xid = traxManager.start();
@@ -177,56 +163,6 @@ public class Middleware extends ResourceManager {
         traxManager.abort(xid);
         lockManager.UnlockAll(xid);
     }
-
-//    public boolean commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
-//        if (!traxManager.isActive(xid))
-//            throw new InvalidTransactionException(xid, "Middleware commit: transaction is not active");
-//        Transaction t = traxManager.getActiveTransaction(xid);
-//        RMHashMap m = t.get_TMPdata();
-//        boolean[] relatedRM = t.getRelatedRMs();
-//
-//        //if it is customer, we need all resources managers to work
-//        if (relatedRM[0] && relatedRM[1] && relatedRM[2]) {
-//            synchronized (m_data) {
-//                for (String key : m.keySet()) {
-//                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
-//                    m_data.put(key, m.get(key));
-//                }
-//
-//            }
-//        }
-//        if (relatedRM[0]) {
-//            //   synchronized (flightRM.m_data){
-//            for (String key : flightRM.getTraxData(xid).keySet()) {
-//                System.out.println("Write:(" + key + "," + flightRM.getTraxData(xid).get(key) + ")");
-//                flightRM.putData(key, flightRM.getTraxData(xid).get(key));
-//            }
-//            flightRM.removeTrax(xid);
-//            //  }
-//        }
-//        if (relatedRM[1]) {
-//            //synchronized (roomRM.m_data) {
-//            for (String key : roomRM.getTraxData(xid).keySet()) {
-//                System.out.println("Write:(" + key + "," + roomRM.getTraxData(xid).get(key) + ")");
-//                roomRM.putData(key, roomRM.getTraxData(xid).get(key));
-//            }
-//            roomRM.removeTrax(xid);
-//            //}
-//        }
-//        if (relatedRM[2]) {
-//            //synchronized (carRM.m_data) {
-//            for (String key : carRM.getTraxData(xid).keySet()) {
-//                System.out.println("Write:(" + key + "," + carRM.getTraxData(xid).get(key) + ")");
-//                carRM.putData(key, carRM.getTraxData(xid).get(key));
-//            }
-//            carRM.removeTrax(xid);
-//            //}
-//        }
-//        traxManager.removeActiveTransaction(xid);
-//
-//        lockManager.UnlockAll(xid);
-//        return true;
-//    }
 
     public long[] commit(int xid) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
         long start = getCurrentTime();
@@ -254,7 +190,6 @@ public class Middleware extends ResourceManager {
             }
         }
         if (relatedRM[0]) {
-            //   synchronized (flightRM.m_data){
             for (String key : flightRM.getTraxData(xid).keySet()) {
                 System.out.println("Write:(" + key + "," + flightRM.getTraxData(xid).get(key) + ")");
                 long t0 = getCurrentTime();
@@ -262,10 +197,8 @@ public class Middleware extends ResourceManager {
                 time2 += (getCurrentTime() - t0);
             }
             flightRM.removeTrax(xid);
-            //  }
         }
         if (relatedRM[1]) {
-            //synchronized (roomRM.m_data) {
             for (String key : roomRM.getTraxData(xid).keySet()) {
                 System.out.println("Write:(" + key + "," + roomRM.getTraxData(xid).get(key) + ")");
                 long t0 = getCurrentTime();
@@ -273,10 +206,8 @@ public class Middleware extends ResourceManager {
                 time3 += (getCurrentTime() - t0);
             }
             roomRM.removeTrax(xid);
-            //}
         }
         if (relatedRM[2]) {
-            //synchronized (carRM.m_data) {
             for (String key : carRM.getTraxData(xid).keySet()) {
                 System.out.println("Write:(" + key + "," + carRM.getTraxData(xid).get(key) + ")");
                 long t0 = getCurrentTime();
@@ -284,7 +215,6 @@ public class Middleware extends ResourceManager {
                 time4 += (getCurrentTime() - t0);
             }
             carRM.removeTrax(xid);
-            //}
         }
         traxManager.removeActiveTransaction(xid);
 
@@ -312,16 +242,6 @@ public class Middleware extends ResourceManager {
         return true;
     }
 
-    //    public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
-//        Trace.info("Middleware: addFlight");
-//        if (!traxManager.isActive(xid))
-//            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-//        Transaction trx = traxManager.getActiveTransaction(xid);
-//        trx.resetTimer();
-//        lockData(xid, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
-//        forwardTraxToRM(xid, FLIGHT_RM);
-//        return flightRM.addFlight(xid, flightNum, flightSeats, flightPrice);
-//    }
     public long[] addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
         Trace.info("Middleware: addFlight");
 
@@ -339,16 +259,6 @@ public class Middleware extends ResourceManager {
         return new long[]{time1 - time0, r[0], r[1]};
     }
 
-    //    public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
-//        Trace.info("Middleware: addCars");
-//        if (!traxManager.isActive(xid))
-//            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-//        Transaction trx = traxManager.getActiveTransaction(xid);
-//        trx.resetTimer();
-//        lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-//        forwardTraxToRM(xid, CAR_RM);
-//        return carRM.addCars(xid, location, numCars, price);
-//    }
     public long[] addCars(int xid, String location, int numCars, int price) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
         Trace.info("Middleware: addCars");
         long time0 = getCurrentTime();
@@ -365,17 +275,6 @@ public class Middleware extends ResourceManager {
         long time2 = getCurrentTime() - time1;
         return new long[]{time1 - time0, r[0], r[1]};
     }
-
-//    public boolean addRooms(int xid, String location, int numRooms, int price) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
-//        Trace.info("Middleware: addRooms");
-//        if (!traxManager.isActive(xid))
-//            throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-//        Transaction trx = traxManager.getActiveTransaction(xid);
-//        trx.resetTimer();
-//        lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-//        forwardTraxToRM(xid, ROOM_RM);
-//        return roomRM.addRooms(xid, location, numRooms, price);
-//    }
 
     public long[] addRooms(int xid, String location, int numRooms, int price) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
         Trace.info("Middleware: addRooms");
@@ -869,7 +768,7 @@ public class Middleware extends ResourceManager {
             int customerID = Integer.parseInt(key.split("-")[1]);
             System.out.println("rmType" + key.toString());
             if (!rmType.equals(CUSTOMER_RM)) {
-                System.out.println("skopped ");
+                System.out.println("stopped ");
                 continue;
             }
 
@@ -881,19 +780,9 @@ public class Middleware extends ResourceManager {
                 s = s.concat("Customer: " + customerID + "\n");
                 s = s.concat(flightRM.queryCustomerInfo(xid, customerID)).concat(carRM.queryCustomerInfo(xid, customerID).split("\n", 2)[1]).concat(roomRM.queryCustomerInfo(xid, customerID).split("\n", 2)[1]);
                 s = s + customer.getSummary();
-                // System.out.println("s"+s);
-            } else {
-                // System.out.println("c is null");
-                // Trace.info("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
-                // return "customer(" + xid + ", " + customerID + ") doesn't exist\n";
             }
-
-
         }
-        // System.out.println("s"+s);
         return s;
-
-
     }
 
     public String getName() throws RemoteException {
@@ -950,22 +839,6 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    // protected void //checkTransaction(int xid) throws TransactionAbortedException, InvalidTransactionException{
-    //     if(traxManager.readActiveData(xid) != null) {
-    //         traxManager.readActiveData(xid).updateLastAction();
-    //         return;
-    //     }
-    //     Trace.info("Transaction is not active: throw error");
-
-    //     Boolean v = traxManager.readInactiveData(xid);
-    //     if (v == null)
-    //         throw new InvalidTransactionException(xid, "MW: The transaction doesn't exist");
-    //     else if (v.booleanValue() == true)
-    //         throw new InvalidTransactionException(xid, "MW: The transaction has already been committed");
-    //     else
-    //         throw new TransactionAbortedException(xid, "MW: The transaction has been aborted");
-    // }
-
     public void lockData(int xid, String data, TransactionLockObject.LockType lockType) throws RemoteException, TransactionAbortedException, InvalidTransactionException {
         try {
             if (!lockManager.Lock(xid, data, lockType)) {
@@ -983,7 +856,6 @@ public class Middleware extends ResourceManager {
     public void forwardTraxToRM(int xid, String resource) throws RemoteException {
         Transaction t = traxManager.getActiveTransaction(xid);
         t.setRelatedRM(resource);
-
         try {
             try {
                 switch (resource) {
