@@ -116,10 +116,6 @@ public class ClientTest_1 extends Client
 
 
             for (int i = 0; i < total.size(); i++) {
-//                System.out.println("i: " + i);
-//                for(int j=0; j<total.get(i).length; j++) {
-//                    System.out.println(total.get(i)[j]);
-//                }
 
                 if(i!=0) MDWTime += total.get(i)[0];
                 if(i==0) MDWTime += total.get(i)[1];
@@ -180,8 +176,7 @@ public class ClientTest_1 extends Client
             long totalDBTime = 0;
 
             for (int i = 0; i < total.size(); i++) {
-//                System.out.println(i);
-//                System.out.println(total.get(i)[0]);
+
                 if(i!=0) MDWTime += total.get(i)[0];
                 if(i==0) MDWTime += total.get(i)[1];
 
@@ -229,21 +224,6 @@ public class ClientTest_1 extends Client
             total.add(start);
             total.add(m_resourceManager.addCars(xid, "Montreal", 1000, 1000));
             total.add(m_resourceManager.commit(xid));
-//            total.add(m_resourceManager.queryCars(xid, "Montreal"));
-//            total.add(m_resourceManager.addRooms(xid, "Toronto", 1000, 1000));
-//            total.add(m_resourceManager.queryRooms(xid, "Toronto"));
-//            total.add(m_resourceManager.addFlight(xid, 1, 1000, 1000));
-//            total.add(m_resourceManager.queryFlight(xid, 1));
-//            total.add(m_resourceManager.reserveCar(xid, cid, "Montreal"));
-//            total.add(m_resourceManager.reserveRoom(xid, cid, "Toronto"));
-//            total.add(m_resourceManager.reserveFlight(xid, cid, 1));
-//            total.add(m_resourceManager.commit(xid));
-
-//            total.add(m_resourceManager.addCars(xid, "Ottawa", 1000, 1000));
-//            total.add(m_resourceManager.queryCars(xid, "Ottawa"));
-//            total.add(m_resourceManager.addFlight(xid, 2, 1000, 1000));
-//            total.add(m_resourceManager.queryFlight(xid, 2));
-
             long endTime = System.currentTimeMillis();
             long totalResponseTime = endTime - startTime;
             long MDWTime = 0;
@@ -251,59 +231,32 @@ public class ClientTest_1 extends Client
             long totalRMTime = 0;
             long totalDBTime = 0;
 
-//            for (int i = 0; i < 10; i++) {
-////                System.out.println(i);
-//                System.out.println(total.get(i)[1]);
-//                if(i!=0) MDWTime += total.get(i)[0];
-//                totalRMDBTime += total.get(i)[1];
-//                if(i!=0) totalDBTime += total.get(i)[2];
-//            }
+            for (int i = 0; i < total.size(); i++) {
 
-            for(int i=0; i< total.get(2).length; i++) {
-                System.out.println(total.get(2)[i]);
+                if(i!=0) MDWTime += total.get(i)[0];
+                if(i==0) MDWTime += total.get(i)[1];
+
+                if(i!=0 && i!=(total.size()-1)) {
+                    totalRMDBTime += total.get(i)[1];
+                    totalDBTime += total.get(i)[2];
+                }
+
+                if(i==(total.size()-1)) {
+                    totalRMDBTime += total.get(i)[1];
+                    totalDBTime += total.get(i)[1];
+                }
             }
 
+            totalRMTime = totalRMDBTime - totalDBTime;
 
-//            totalRMTime = totalRMDBTime - totalDBTime;
-//
-//            System.out.println("totalResponseTime : " + totalResponseTime);
-//            System.out.println("totalMDWTime : " + MDWTime);
-//            System.out.println("totalRMDBTime : " + totalRMDBTime);
-//            System.out.println("totalRMTime : " + totalRMTime);
-//            System.out.println("totalDBTime : " + totalDBTime);
-//            System.out.println("totalCommunicationTime : " + totalCommunicationTime);
+            System.out.println("totalResponseTime : " + totalResponseTime);
+            System.out.println("totalMDWTime : " + MDWTime);
+            System.out.println("totalRMDBTime : " + totalRMDBTime);
+            System.out.println("totalRMTime : " + totalRMTime);
+            System.out.println("totalDBTime : " + totalDBTime);
             return new long[]{totalResponseTime, MDWTime, totalRMTime, totalDBTime};
         }
     }
-
-
-//    public void runE1MultipleRM() throws Exception {
-//        long startTime = System.currentTimeMillis();
-//        int xid = m_resourceManager.start();
-//        ArrayList<ArrayList<long>> total = new ArrayList<>();
-//        total.add(m_resourceManager.addCars(xid, "Montreal", 1000, 1000));
-//        total.add(m_resourceManager.queryCars(xid, "Montreal"));
-//        total.add(m_resourceManager.addRooms(xid, "Toronto", 1000, 1000));
-//        total.add(m_resourceManager.queryRooms(xid, "Toronto"));
-//        total.add(m_resourceManager.addFlight(xid, 1, 1000, 1000));
-//        total.add(m_resourceManager.queryFlight(xid, 1));
-//        total.add(m_resourceManager.addCars(xid, "Ottawa", 1000, 1000));
-//        total.add(m_resourceManager.queryCars(xid, "Ottawa"));
-//        total.add(m_resourceManager.addFlight(xid, 2, 1000, 1000));
-//        total.add(m_resourceManager.queryFlight(xid, 2));
-//        long endTime = System.currentTimeMillis();
-//        long totalResponseTime = endTime - startTime;
-//        long totalMDWTime, totalDBTime, totalCommunicationTime = 0;
-//        for (int i=0; i<10; i++) {
-//            totalMDWTime += total.get(i).get(0);
-//            totalDBTime += total.get(i).get(1);
-//            totalCommunicationTime += total.get(i).get(2);
-//        }
-//        System.out.println("totalResponseTime : " + totalResponseTime);
-//        System.out.println("totalMDWTime : " + totalMDWTime);
-//        System.out.println("totalDBTime : " + totalDBTime);
-//        System.out.println("totalCommunicationTime : " + totalCommunicationTime);
-//    }
 
 
 
