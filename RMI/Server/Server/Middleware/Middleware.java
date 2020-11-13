@@ -177,9 +177,9 @@ public class Middleware extends ResourceManager {
 
         //if it is customer, we need all resources managers to work
         if (relatedRM[0] && relatedRM[1] && relatedRM[2]) {
-	    for (String key : m.keySet(){
-		putData(key, m.get(key));
-	    }
+            for (String key : m.keySet()){
+                putData(key, m.get(key));
+            }
         }
         if (relatedRM[0]){
             for (String key : flightRM.getTraxData(xid).keySet()) {
