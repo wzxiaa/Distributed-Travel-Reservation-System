@@ -853,18 +853,19 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public void forwardTraxToRM(int xid, String resource) throws RemoteException {
+    public void forwardTraxToRM(int xid, String resource) throws RemoteException  {
         Transaction t = traxManager.getActiveTransaction(xid);
         t.setRelatedRM(resource);
         try {
             try {
                 switch (resource) {
-                    case FLIGHT_RM: {
-                        flightRM.addNewTrax(xid);
-                        break;
-                    }
+
                     case CAR_RM: {
                         carRM.addNewTrax(xid);
+                        break;
+                    }
+                    case FLIGHT_RM: {
+                        flightRM.addNewTrax(xid);
                         break;
                     }
                     case ROOM_RM: {
@@ -881,16 +882,18 @@ public class Middleware extends ResourceManager {
                 }
             } catch (ConnectException e) {
                 switch (resource) {
-                    case FLIGHT_RM: {
-                        connectServer(FLIGHT_RM, flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
-                        flightRM.addNewTrax(xid);
-                        break;
-                    }
                     case CAR_RM: {
                         connectServer(CAR_RM, carRM_serverHost, carRM_serverPort, carRM_serverName);
                         carRM.addNewTrax(xid);
                         break;
                     }
+
+                    case FLIGHT_RM: {
+                        connectServer(FLIGHT_RM, flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
+                        flightRM.addNewTrax(xid);
+                        break;
+                    }
+
                     case ROOM_RM: {
                         connectServer(ROOM_RM, roomRM_serverHost, roomRM_serverPort, roomRM_serverName);
                         roomRM.addNewTrax(xid);
