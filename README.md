@@ -1,6 +1,6 @@
 # comp512-project
 
-To run the RMI resource manager:
+### run the RMI resource manager:
 
 ```
 cd RMI/Server/
@@ -25,7 +25,7 @@ make
 
 
 
-To run the RMI_Performance_Analysis to execute test code:
+### run the RMI_Performance_Analysis to execute test code:
 
 ```
 cd RMI_Performance_Analysis/Server/
@@ -47,7 +47,3 @@ cd RMI_Performance_Analysis/Client
 make
 ./run_client_test1.sh [<server_hostname>] Middleware
 ```
-
-~                                                                                                                                                                                  
-~                                                      
-
