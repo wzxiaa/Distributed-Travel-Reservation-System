@@ -25,7 +25,7 @@ public class Middleware extends ResourceManager {
     public static final String FLIGHT_RM = "Flight";
     public static final String ROOM_RM = "Room";
     public static final String CAR_RM = "Car";
-    public static final String CUSTOMER_RM = "customer";
+    public static final String CUSTOMER_RM = "Customer";
 
     protected static String flightRM_serverName;
     protected static String carRM_serverName;

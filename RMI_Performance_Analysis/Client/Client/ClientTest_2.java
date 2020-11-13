@@ -18,7 +18,7 @@ public class ClientTest_2 extends Client implements Runnable
     private static String s_rmiPrefix = "group_24_";
 
     private static int num_clients = 6;
-    private static int desired_thput = 50;
+    private static int desired_thput = 1;
     private long timer = 0;
     private int x = 10;
     private static List<long[]> testRes = new ArrayList<>();
@@ -90,7 +90,7 @@ public class ClientTest_2 extends Client implements Runnable
             else timeInterval -= x;
             plus = !plus;
             try{
-                int index = (int)(Math.random()*100 + 1);
+		int index = (int)(Math.random()*100 + 1); //> 50 ? i-50 : i;
                 long[] res = runE1SingleRM(index);
                 int sleepTime = (int)(timeInterval-res[0]);
                 System.out.println("sleep time : " + sleepTime);

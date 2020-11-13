@@ -23,7 +23,7 @@ public class Middleware extends ResourceManager {
     public static final String FLIGHT_RM = "Flight";
     public static final String ROOM_RM = "Room";
     public static final String CAR_RM = "Car";
-    public static final String CUSTOMER_RM = "customer";
+    public static final String CUSTOMER_RM = "Customer";
     protected static String flightRM_serverName;
     protected static String carRM_serverName;
     protected static String roomRM_serverName;
@@ -177,13 +177,9 @@ public class Middleware extends ResourceManager {
 
         //if it is customer, we need all resources managers to work
         if (relatedRM[0] && relatedRM[1] && relatedRM[2]) {
-            synchronized (m_data) {
-                for (String key : m.keySet()) {
-                    System.out.println("Write:(" + key + "," + m.get(key) + ")");
-                    m_data.put(key, m.get(key));
-                }
-
-            }
+	    for (String key : m.keySet(){
+		putData(key, m.get(key));
+	    }
         }
         if (relatedRM[0]){
             for (String key : flightRM.getTraxData(xid).keySet()) {
