@@ -610,7 +610,7 @@ public class Middleware extends ResourceManager {
             String rmType = key.split("-")[0];
             int customerID = Integer. parseInt(key.split("-")[1]);
             System.out.println("rmType"+key.toString());
-            if (!rmType.equals(CUSTOMER_RM)){
+            if (!rmType.equals(CUSTOMER_RM.toLowerCase())){
                 System.out.println("stopped ");
                 continue;
             }
