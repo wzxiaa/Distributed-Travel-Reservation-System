@@ -269,11 +269,6 @@ public class LockManager
 	{
 		Trace.info("LM::waitLock(" + dataLockObject.getXId() + ", " + dataLockObject.getDataName() + ", " + dataLockObject.getLockType() + ") called");
 
-		// Check timestamp or add a new one.
-		//
-		// Will always add new timestamp for each new lock request since
-		// the timeObject is deleted each time the transaction succeeds in
-		// getting a lock (see Lock())
 		TimeObject timeObject = new TimeObject(dataLockObject.getXId());
 		TimeObject timestamp = null;
 		long timeBlocked = 0;

@@ -24,11 +24,6 @@ public class Middleware extends ResourceManager {
     public static final String ROOM_RM = "Room";
     public static final String CAR_RM = "Car";
     public static final String CUSTOMER_RM = "customer";
-
-    // protected static ServerConfig s_flightServer;
-    // protected static ServerConfig s_carServer;
-    // protected static ServerConfig s_roomServer;
-
     protected static String flightRM_serverName;
     protected static String carRM_serverName;
     protected static String roomRM_serverName;
@@ -63,8 +58,6 @@ public class Middleware extends ResourceManager {
     private static String s_rmiPrefix = "group_24_";
 
     public static void main(String[] args) {
-
-        // Args: name,host,port: Flight,localhost,1099
         if (args.length == 3) {
             try {
                 String[] flightInfo = args[0].split(",");
@@ -117,9 +110,6 @@ public class Middleware extends ResourceManager {
 
     public void connectServers()
     {
-        // connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-        // connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-        // connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
 
         connectServer("Flight", flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
         connectServer("Car",carRM_serverHost, carRM_serverPort, carRM_serverName);
@@ -151,8 +141,6 @@ public class Middleware extends ResourceManager {
                         System.out.println("'" + s_serverName + "' resource manager unbound");
                     }
                     catch(Exception e) {
-                        //System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
-                        //e.printStackTrace();
                     }
                     System.out.println("'" + s_serverName + "' Shut down");
                 }
@@ -198,31 +186,25 @@ public class Middleware extends ResourceManager {
             }
         }
         if (relatedRM[0]){
-         //   synchronized (flightRM.m_data){
-                for (String key : flightRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + flightRM.getTraxData(xid).get(key) + ")");
-                    flightRM.putData(key, flightRM.getTraxData(xid).get(key));
-                }
-                flightRM.removeTrax(xid);
-          //  }
+            for (String key : flightRM.getTraxData(xid).keySet()) {
+                System.out.println("Write:(" + key + "," + flightRM.getTraxData(xid).get(key) + ")");
+                flightRM.putData(key, flightRM.getTraxData(xid).get(key));
+            }
+            flightRM.removeTrax(xid);
         }
         if (relatedRM[1]){
-            //synchronized (roomRM.m_data) {
-                for (String key : roomRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + roomRM.getTraxData(xid).get(key) + ")");
-                    roomRM.putData(key, roomRM.getTraxData(xid).get(key));
-                }
-                roomRM.removeTrax(xid);
-            //}
+            for (String key : roomRM.getTraxData(xid).keySet()) {
+                System.out.println("Write:(" + key + "," + roomRM.getTraxData(xid).get(key) + ")");
+                roomRM.putData(key, roomRM.getTraxData(xid).get(key));
+            }
+            roomRM.removeTrax(xid);
         }
         if (relatedRM[2]){
-            //synchronized (carRM.m_data) {
-                for (String key : carRM.getTraxData(xid).keySet()) {
-                    System.out.println("Write:(" + key + "," + carRM.getTraxData(xid).get(key) + ")");
-                    carRM.putData(key, carRM.getTraxData(xid).get(key));
-                }
-                carRM.removeTrax(xid);
-            //}
+            for (String key : carRM.getTraxData(xid).keySet()) {
+                System.out.println("Write:(" + key + "," + carRM.getTraxData(xid).get(key) + ")");
+                carRM.putData(key, carRM.getTraxData(xid).get(key));
+            }
+            carRM.removeTrax(xid);
         }
         traxManager.removeActiveTransaction(xid);
 
@@ -455,7 +437,6 @@ public class Middleware extends ResourceManager {
         forwardTraxToRM(xid,CUSTOMER_RM);
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer != null) {
-            // First, remove all the reservations related to the customer. Then, remove the customer from DB.
             lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
             for (String reservedKey : customer.getReservations().keySet()) {
                 lockData(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
@@ -541,7 +522,6 @@ public class Middleware extends ResourceManager {
             throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
         int id = xid;
         Trace.info("RM::bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ") called" );
-        //checkTransaction(xid);
 
         lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
         forwardTraxToRM(id,CUSTOMER_RM);
@@ -559,10 +539,7 @@ public class Middleware extends ResourceManager {
             flights.add(Integer.parseInt(flight));
         }
 
-        // Firstly check the availability for all the resources required
-        // give locks based on the resources first
-
-        // check availability for flights
+        // 1. check the availability for all the resources required
         for(Integer flight: flights) {
             lockData(xid, Flight.getKey(flight), TransactionLockObject.LockType.LOCK_READ);
             forwardTraxToRM(id,FLIGHT_RM);
@@ -574,7 +551,7 @@ public class Middleware extends ResourceManager {
             flightprices.add(flightRM.getPrice(xid, Flight.getKey(flight)));
         }
 
-        // check availability for cars
+        // 2. check availability for cars
         if(car) {
             lockData(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
             forwardTraxToRM(id,CAR_RM);
@@ -585,7 +562,7 @@ public class Middleware extends ResourceManager {
             }
         }
 
-        // check availability for rooms
+        //3. check availability for rooms
         if(room) {
             lockData(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
             forwardTraxToRM(id,ROOM_RM);
@@ -595,13 +572,12 @@ public class Middleware extends ResourceManager {
                 return false;
             }
         }
-        // availability passed
-        // add customer availability and write
+     
         for(int i=0; i<flights.size(); i++) {
             customer.reserve(Flight.getKey(flights.get(i)), String.valueOf(flights.get(i)), flightprices.get(i));
             flightRM.reserveFlight(xid, customerID, flights.get(i));
         }
-        // writeData(xid, customer.getKey(customerID), customer);
+    
 
         if(car) {
             int price = carRM.getPrice(xid, Car.getKey(location));
@@ -618,22 +594,7 @@ public class Middleware extends ResourceManager {
         return true;
     }
 
-    // public String queryCustomerInfo(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
-
-    //     if(!traxManager.isActive(xid))
-    //         throw new InvalidTransactionException(xid, " Middleware: Not a valid transaction");
-    //     Trace.info("Middleware: querCustomer");
-    //     Transaction trx = traxManager.getActiveTransaction(xid);
-    //     trx.resetTimer();
-    //     lockData(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-    //     forwardTraxToRM(xid,CUSTOMER_RM);
-    //     Customer customer = (Customer) readData(xid, Customer.getKey(customerID));
-    //     if(customer == null){
-    //         Trace.info("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
-    //         return "customer(" + xid + ", " + customerID + ") doesn't exist\n";
-    //     }
-    //     return flightRM.queryCustomerInfo(xid,customerID) + carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1] + roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1];
-    // }
+   
 
     public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
@@ -654,7 +615,7 @@ public class Middleware extends ResourceManager {
             int customerID = Integer. parseInt(key.split("-")[1]);
             System.out.println("rmType"+key.toString());
             if (!rmType.equals(CUSTOMER_RM)){
-                System.out.println("skopped ");
+                System.out.println("stopped ");
                 continue;
             }
                  
@@ -664,21 +625,11 @@ public class Middleware extends ResourceManager {
             
             if (customer != null){
                 s = s.concat("Customer: "+customerID+"\n");
-                s= s.concat(flightRM.queryCustomerInfo(xid,customerID)).concat(carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]).concat(roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]);
-                s = s+ customer.getSummary();
-               // System.out.println("s"+s);
-            }else{
-                // System.out.println("c is null");
-                // Trace.info("Middleware: customer(" + xid + ", " + customerID + ") doesn't exist");
-                // return "customer(" + xid + ", " + customerID + ") doesn't exist\n";
+                s = s.concat(flightRM.queryCustomerInfo(xid,customerID)).concat(carRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]).concat(roomRM.queryCustomerInfo(xid,customerID).split("\n", 2)[1]);
+                s = s + customer.getSummary();
             }
-            
-        
         }
-       // System.out.println("s"+s);
         return s;
-                                                                                     
-
     }
 
     public String getName() throws RemoteException {
@@ -738,22 +689,6 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    // protected void //checkTransaction(int xid) throws TransactionAbortedException, InvalidTransactionException{
-    //     if(traxManager.readActiveData(xid) != null) {
-    //         traxManager.readActiveData(xid).updateLastAction();
-    //         return;
-    //     }
-    //     Trace.info("Transaction is not active: throw error");
-
-    //     Boolean v = traxManager.readInactiveData(xid);
-    //     if (v == null)
-    //         throw new InvalidTransactionException(xid, "MW: The transaction doesn't exist");
-    //     else if (v.booleanValue() == true)
-    //         throw new InvalidTransactionException(xid, "MW: The transaction has already been committed");
-    //     else
-    //         throw new TransactionAbortedException(xid, "MW: The transaction has been aborted");
-    // }
-
     public void lockData(int xid, String data, TransactionLockObject.LockType lockType) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
         try {
             if (!lockManager.Lock(xid, data, lockType)) {
@@ -771,16 +706,16 @@ public class Middleware extends ResourceManager {
     public void forwardTraxToRM(int xid, String resource) throws RemoteException  {
         Transaction t = traxManager.getActiveTransaction(xid);
         t.setRelatedRM(resource);
-
         try {
             try {
                 switch (resource) {
-                    case FLIGHT_RM: {
-                        flightRM.addNewTrax(xid);
-                        break;
-                    }
+                   
                     case CAR_RM: {
                         carRM.addNewTrax(xid);
+                        break;
+                    }
+                    case FLIGHT_RM: {
+                        flightRM.addNewTrax(xid);
                         break;
                     }
                     case ROOM_RM: {
@@ -797,16 +732,18 @@ public class Middleware extends ResourceManager {
                 }
             } catch (ConnectException e) {
                 switch (resource) {
-                    case FLIGHT_RM: {
-                        connectServer(FLIGHT_RM, flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
-                        flightRM.addNewTrax(xid);
-                        break;
-                    }
                     case CAR_RM: {
                         connectServer(CAR_RM, carRM_serverHost, carRM_serverPort, carRM_serverName);
                         carRM.addNewTrax(xid);
                         break;
                     }
+
+                    case FLIGHT_RM: {
+                        connectServer(FLIGHT_RM, flightRM_serverHost, flightRM_serverPort, flightRM_serverName);
+                        flightRM.addNewTrax(xid);
+                        break;
+                    }
+
                     case ROOM_RM: {
                         connectServer(ROOM_RM, roomRM_serverHost, roomRM_serverPort, roomRM_serverName);
                         roomRM.addNewTrax(xid);
