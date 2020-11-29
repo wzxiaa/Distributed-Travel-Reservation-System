@@ -1,3 +1,0 @@
-grant codebase "file:/home/2017/wxia4/COMP512/comp512_A1/Template/Client/" {
-permission java.security.AllPermission;
-};
